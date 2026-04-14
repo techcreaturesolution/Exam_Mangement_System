@@ -18,11 +18,15 @@ A full-stack MERN (MongoDB, Express, React, Node.js) application for managing Pr
   - Max attempts limit
   - Show/hide results & answers
   - Custom instructions
+- **Payment Plans** - Create subscription plans (All Access, Category, Subject, Single Exam)
+- **Payment History** - View all Razorpay transactions, revenue stats, status filters
 
 ### Mobile App (React Native/Expo)
 - **User Registration & Login**
 - **Practice Exam Mode** - Practice at your own pace with category-wise questions
 - **Mock Exam Mode** - Timed exam simulation with real exam conditions
+- **Razorpay Payment** - Pay for exam access before starting (plan-based access control)
+- **My Subscriptions** - View active plans and payment history
 - **Exam Flow** - Question navigation, timer, progress tracking
 - **Results** - Detailed score breakdown (correct, wrong, skipped, time spent)
 - **Exam History** - Track all past attempts and progress
@@ -36,6 +40,7 @@ A full-stack MERN (MongoDB, Express, React, Node.js) application for managing Pr
 | Admin Dashboard | React (Vite), React Router, Axios |
 | Mobile App | React Native (Expo) |
 | Authentication | JWT (JSON Web Tokens) |
+| Payment Gateway | Razorpay |
 | File Upload | Multer, XLSX parser |
 
 ## Project Structure
@@ -103,6 +108,8 @@ PORT=5000
 MONGODB_URI=mongodb://localhost:27017/exam_management
 JWT_SECRET=your_secret_key_here
 JWT_EXPIRES_IN=7d
+RAZORPAY_KEY_ID=rzp_live_SdMS0vJY4eYUBl
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 ```
 
 ### 3. Seed Default Data
@@ -192,6 +199,20 @@ Scan the QR code with Expo Go app on your phone.
 | POST | `/api/exams/:id/start` | Start exam attempt |
 | POST | `/api/exams/:id/submit` | Submit exam answers |
 | GET | `/api/exams/history` | User's exam history |
+
+### Payments (Razorpay)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/payments/plans` | List payment plans |
+| POST | `/api/payments/plans` | Create plan (Admin) |
+| PUT | `/api/payments/plans/:id` | Update plan (Admin) |
+| DELETE | `/api/payments/plans/:id` | Delete plan (Admin) |
+| GET | `/api/payments/all` | All payments (Admin) |
+| POST | `/api/payments/create-order` | Create Razorpay order |
+| POST | `/api/payments/verify` | Verify payment signature |
+| GET | `/api/payments/my-subscriptions` | User's active plans |
+| GET | `/api/payments/my-payments` | User's payment history |
+| GET | `/api/payments/check-access/:examId` | Check exam access |
 
 ## Bulk Upload Format
 

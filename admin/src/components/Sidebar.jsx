@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   FiHome, FiGrid, FiBook, FiLayers, FiHelpCircle,
-  FiFileText, FiLogOut, FiMenu, FiX,
+  FiFileText, FiLogOut, FiMenu, FiX, FiCreditCard, FiDollarSign,
 } from 'react-icons/fi';
 import { useState } from 'react';
 
@@ -23,6 +23,8 @@ const Sidebar = () => {
     { path: '/levels', icon: <FiLayers />, label: 'Levels' },
     { path: '/questions', icon: <FiHelpCircle />, label: 'Questions' },
     { path: '/exams', icon: <FiFileText />, label: 'Exams' },
+    { path: '/payment-plans', icon: <FiCreditCard />, label: 'Payment Plans' },
+    { path: '/payment-history', icon: <FiDollarSign />, label: 'Payments' },
   ];
 
   return (

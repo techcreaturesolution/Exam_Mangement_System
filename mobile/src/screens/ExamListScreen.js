@@ -35,7 +35,7 @@ const ExamListScreen = ({ route, navigation }) => {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Start Exam',
-          onPress: () => navigation.navigate('ExamScreen', { examId: exam._id }),
+          onPress: () => navigation.navigate('Payment', { examId: exam._id, examTitle: exam.title }),
         },
       ]
     );

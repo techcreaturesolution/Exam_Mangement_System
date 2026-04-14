@@ -27,6 +27,7 @@ app.use('/api/subjects', require('./routes/subjectRoutes'));
 app.use('/api/levels', require('./routes/levelRoutes'));
 app.use('/api/questions', require('./routes/questionRoutes'));
 app.use('/api/exams', require('./routes/examRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {

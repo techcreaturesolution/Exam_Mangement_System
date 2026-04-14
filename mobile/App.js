@@ -12,6 +12,8 @@ import ExamListScreen from './src/screens/ExamListScreen';
 import ExamScreen from './src/screens/ExamScreen';
 import ResultScreen from './src/screens/ResultScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
+import PaymentScreen from './src/screens/PaymentScreen';
+import MySubscriptionsScreen from './src/screens/MySubscriptionsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -57,6 +59,16 @@ const AppStack = () => (
       name="History"
       component={HistoryScreen}
       options={{ title: 'Exam History' }}
+    />
+    <Stack.Screen
+      name="Payment"
+      component={PaymentScreen}
+      options={{ title: 'Choose a Plan' }}
+    />
+    <Stack.Screen
+      name="MySubscriptions"
+      component={MySubscriptionsScreen}
+      options={{ title: 'My Subscriptions' }}
     />
   </Stack.Navigator>
 );

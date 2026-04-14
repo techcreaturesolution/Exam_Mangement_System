@@ -70,6 +70,14 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.historyTitle}>Exam History</Text>
         <Text style={styles.historySubtitle}>View your past exam results and progress</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.historyCard, { borderLeftWidth: 4, borderLeftColor: '#4f46e5' }]}
+        onPress={() => navigation.navigate('MySubscriptions')}
+      >
+        <Text style={styles.historyTitle}>My Subscriptions</Text>
+        <Text style={styles.historySubtitle}>View active plans and payment history</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
