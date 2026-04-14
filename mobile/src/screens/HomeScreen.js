@@ -1,123 +1,152 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { COLORS } from '../constants/theme';
+import api from '../services/api';
 
 const HomeScreen = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const { data } = await api.get('/categories?isActive=true');
+      setCategories(data.slice(0, 4));
+    } catch (e) { /* ignore */ }
+    finally { setLoading(false); }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello, {user?.name}!</Text>
-          <Text style={styles.subtitle}>Choose your exam mode</Text>
+    <View style={styles.container}>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>Hi, {user?.name?.split(' ')[0]}!</Text>
+            <Text style={styles.streak}>Streak: 0 days</Text>
+          </View>
+          <TouchableOpacity style={styles.avatar} onPress={() => navigation.navigate('ProfileTab')}>
+            <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.cardsContainer}>
+        {/* Free Demo Banner */}
+        <TouchableOpacity style={styles.demoBanner}>
+          <Text style={styles.demoTitle}>Try free demo MCQs</Text>
+          <Text style={styles.demoSub}>10 questions · no signup needed</Text>
+          <View style={styles.demoBtn}>
+            <Text style={styles.demoBtnText}>Start free →</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Featured Topics */}
+        <Text style={styles.sectionLabel}>Featured topics</Text>
+        {loading ? (
+          <ActivityIndicator color={COLORS.navy} style={{ marginTop: 20 }} />
+        ) : (
+          categories.map((cat) => (
+            <TouchableOpacity
+              key={cat._id}
+              style={styles.topicCard}
+              onPress={() => navigation.navigate('PracticeTab', {
+                screen: 'SetList',
+                params: { categoryId: cat._id, categoryName: cat.name },
+              })}
+            >
+              <View style={styles.topicHeader}>
+                <Text style={styles.topicName}>{cat.name}</Text>
+                <View style={styles.badgeNew}>
+                  <Text style={styles.badgeNewText}>New</Text>
+                </View>
+              </View>
+              <Text style={styles.topicMeta}>
+                {cat.description || 'Practice questions available'}
+              </Text>
+            </TouchableOpacity>
+          ))
+        )}
+
+        {categories.length === 0 && !loading && (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No topics available yet</Text>
+          </View>
+        )}
+
+        {/* Upgrade Banner */}
         <TouchableOpacity
-          style={[styles.card, styles.practiceCard]}
-          onPress={() => navigation.navigate('ExamCategories', { examType: 'practice' })}
+          style={styles.upgradeBanner}
+          onPress={() => navigation.navigate('Plans')}
         >
-          <View style={styles.cardIcon}>
-            <Text style={styles.iconText}>P</Text>
-          </View>
-          <Text style={styles.cardTitle}>Practice Exam</Text>
-          <Text style={styles.cardDescription}>
-            Practice at your own pace. Review answers and explanations after each question.
-          </Text>
-          <View style={styles.cardFeatures}>
-            <Text style={styles.feature}>• Category-wise questions</Text>
-            <Text style={styles.feature}>• Flexible timing</Text>
-            <Text style={styles.feature}>• Instant feedback</Text>
-            <Text style={styles.feature}>• Learn from explanations</Text>
-          </View>
-          <View style={styles.startBtn}>
-            <Text style={styles.startBtnText}>Start Practice →</Text>
+          <Text style={styles.upgradeTitle}>Unlock all topics</Text>
+          <View style={styles.upgradeBtn}>
+            <Text style={styles.upgradeBtnText}>Upgrade</Text>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.card, styles.mockCard]}
-          onPress={() => navigation.navigate('ExamCategories', { examType: 'mock' })}
-        >
-          <View style={[styles.cardIcon, styles.mockIcon]}>
-            <Text style={styles.iconText}>M</Text>
-          </View>
-          <Text style={styles.cardTitle}>Mock Exam</Text>
-          <Text style={styles.cardDescription}>
-            Simulate real exam conditions with timed tests and full scoring.
-          </Text>
-          <View style={styles.cardFeatures}>
-            <Text style={styles.feature}>• Timed exam simulation</Text>
-            <Text style={styles.feature}>• Real exam environment</Text>
-            <Text style={styles.feature}>• Full score report</Text>
-            <Text style={styles.feature}>• Track your progress</Text>
-          </View>
-          <View style={[styles.startBtn, styles.mockStartBtn]}>
-            <Text style={styles.startBtnText}>Start Mock Test →</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={styles.historyCard}
-        onPress={() => navigation.navigate('History')}
-      >
-        <Text style={styles.historyTitle}>Exam History</Text>
-        <Text style={styles.historySubtitle}>View your past exam results and progress</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.historyCard, { borderLeftWidth: 4, borderLeftColor: '#4f46e5' }]}
-        onPress={() => navigation.navigate('MySubscriptions')}
-      >
-        <Text style={styles.historyTitle}>My Subscriptions</Text>
-        <Text style={styles.historySubtitle}>View active plans and payment history</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <View style={{ height: 20 }} />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  scroll: { flex: 1 },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 20, paddingTop: 60, backgroundColor: '#4f46e5',
+    paddingHorizontal: 16, paddingTop: 56, paddingBottom: 16,
   },
-  greeting: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
-  logoutBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  logoutText: { color: '#fff', fontWeight: '600' },
-  cardsContainer: { padding: 16, gap: 16 },
-  card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
+  greeting: { fontSize: 20, fontWeight: '700', color: COLORS.text },
+  streak: { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  avatar: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.navy,
+    justifyContent: 'center', alignItems: 'center',
   },
-  practiceCard: { borderLeftWidth: 4, borderLeftColor: '#10b981' },
-  mockCard: { borderLeftWidth: 4, borderLeftColor: '#f59e0b' },
-  cardIcon: {
-    width: 48, height: 48, borderRadius: 12, backgroundColor: '#d1fae5',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+  avatarText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  demoBanner: {
+    backgroundColor: COLORS.orange, borderRadius: 12, padding: 16,
+    marginHorizontal: 16, marginBottom: 16,
   },
-  mockIcon: { backgroundColor: '#fef3c7' },
-  iconText: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
-  cardTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937', marginBottom: 8 },
-  cardDescription: { fontSize: 14, color: '#6b7280', lineHeight: 20, marginBottom: 12 },
-  cardFeatures: { marginBottom: 16 },
-  feature: { fontSize: 13, color: '#4b5563', marginBottom: 4 },
-  startBtn: { backgroundColor: '#10b981', padding: 12, borderRadius: 8, alignItems: 'center' },
-  mockStartBtn: { backgroundColor: '#f59e0b' },
-  startBtnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
-  historyCard: {
-    margin: 16, marginTop: 0, backgroundColor: '#fff', borderRadius: 12, padding: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+  demoTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  demoSub: { fontSize: 13, color: COLORS.orangePale, marginTop: 2, marginBottom: 10 },
+  demoBtn: {
+    backgroundColor: '#fff', borderRadius: 6, paddingHorizontal: 14, paddingVertical: 5,
+    alignSelf: 'flex-start',
   },
-  historyTitle: { fontSize: 16, fontWeight: '600', color: '#1f2937' },
-  historySubtitle: { fontSize: 13, color: '#6b7280', marginTop: 4 },
+  demoBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.orange },
+  sectionLabel: { fontSize: 13, color: COLORS.textMuted, marginHorizontal: 16, marginBottom: 8 },
+  topicCard: {
+    backgroundColor: COLORS.white, borderWidth: 0.5, borderColor: COLORS.border,
+    borderRadius: 12, padding: 14, marginHorizontal: 16, marginBottom: 8,
+  },
+  topicHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  topicName: { fontSize: 15, fontWeight: '600', color: COLORS.text },
+  badgeNew: { backgroundColor: COLORS.blueBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  badgeNewText: { fontSize: 11, fontWeight: '700', color: COLORS.blueText },
+  topicMeta: { fontSize: 12, color: COLORS.textMuted, marginTop: 4 },
+  emptyCard: {
+    backgroundColor: COLORS.white, borderRadius: 12, padding: 30,
+    marginHorizontal: 16, alignItems: 'center',
+  },
+  emptyText: { fontSize: 14, color: COLORS.textMuted },
+  upgradeBanner: {
+    backgroundColor: COLORS.navyBg, borderRadius: 12, padding: 14,
+    marginHorizontal: 16, marginTop: 8,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  upgradeTitle: { fontSize: 14, fontWeight: '700', color: COLORS.navy },
+  upgradeBtn: { backgroundColor: COLORS.navy, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 5 },
+  upgradeBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
 });
 
 export default HomeScreen;

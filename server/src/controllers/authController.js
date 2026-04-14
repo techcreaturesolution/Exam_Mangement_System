@@ -103,4 +103,31 @@ const adminLogin = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, adminLogin };
+// @desc    Get all users (admin)
+// @route   GET /api/auth/users
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+
+    // Attach active plan info
+    const Payment = require('../models/Payment');
+    const usersWithPlans = await Promise.all(users.map(async (user) => {
+      const activePlan = await Payment.findOne({
+        user: user._id,
+        status: 'paid',
+        expiresAt: { $gte: new Date() },
+      }).populate('plan', 'name planType').sort({ expiresAt: -1 });
+
+      return {
+        ...user.toObject(),
+        activePlan: activePlan ? { name: activePlan.plan?.name, expiresAt: activePlan.expiresAt } : null,
+      };
+    }));
+
+    res.json(usersWithPlans);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { register, login, getMe, adminLogin, getUsers };

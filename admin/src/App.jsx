@@ -13,6 +13,8 @@ import Questions from './pages/Questions';
 import Exams from './pages/Exams';
 import PaymentPlans from './pages/PaymentPlans';
 import PaymentHistory from './pages/PaymentHistory';
+import UserManager from './pages/UserManager';
+import Reports from './pages/Reports';
 import './App.css';
 
 function App() {
@@ -37,6 +39,8 @@ function App() {
             <Route path="exams" element={<Exams />} />
             <Route path="payment-plans" element={<PaymentPlans />} />
             <Route path="payment-history" element={<PaymentHistory />} />
+            <Route path="users" element={<UserManager />} />
+            <Route path="reports" element={<Reports />} />
           </Route>
         </Routes>
       </Router>

@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { COLORS } from '../constants/theme';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -32,55 +33,64 @@ const LoginScreen = ({ navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>Exam Portal</Text>
-          <Text style={styles.subtitle}>Practice & Mock Exams</Text>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <View style={styles.hexagon}>
+            <Text style={styles.hexText}>TB</Text>
+          </View>
+          <Text style={styles.appName}>TestBharti</Text>
+          <Text style={styles.tagline}>RECRUITMENT PREP</Text>
         </View>
 
+        {/* Form */}
         <View style={styles.form}>
-          <Text style={styles.title}>Sign In</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
+          <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
-              placeholder="Enter your email"
+              placeholder="Email or phone number"
+              placeholderTextColor={COLORS.textLight}
               keyboardType="email-address"
               autoCapitalize="none"
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
+          <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Enter your password"
+              placeholder="Password"
+              placeholderTextColor={COLORS.textLight}
               secureTextEntry
             />
           </View>
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.btn, styles.btnPrimary, loading && styles.btnDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.btnPrimaryText}>Sign in</Text>
             )}
           </TouchableOpacity>
 
+          <Text style={styles.orText}>or</Text>
+
+          <TouchableOpacity style={[styles.btn, styles.btnOutline]}>
+            <Text style={styles.btnOutlineText}>Continue with Google</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
-            style={styles.linkButton}
+            style={styles.registerLink}
             onPress={() => navigation.navigate('Register')}
           >
-            <Text style={styles.linkText}>
-              Don't have an account? <Text style={styles.linkBold}>Sign Up</Text>
+            <Text style={styles.registerText}>
+              New user? <Text style={styles.registerBold}>Register →</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -90,90 +100,33 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#4f46e5',
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 24 },
+  logoContainer: { alignItems: 'center', marginBottom: 36 },
+  hexagon: {
+    width: 72, height: 72, borderRadius: 16, backgroundColor: COLORS.navy,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
+    transform: [{ rotate: '0deg' }],
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
-  },
-  form: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
-  },
+  hexText: { fontSize: 24, fontWeight: '700', color: '#fff' },
+  appName: { fontSize: 28, fontWeight: '700', color: COLORS.navy },
+  tagline: { fontSize: 11, color: COLORS.textLight, letterSpacing: 2, marginTop: 2 },
+  form: { width: '100%' },
+  inputContainer: { marginBottom: 12 },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#f9fafb',
+    height: 48, borderWidth: 1, borderColor: COLORS.inputBorder, borderRadius: 10,
+    backgroundColor: COLORS.white, paddingHorizontal: 16, fontSize: 15, color: COLORS.text,
   },
-  button: {
-    backgroundColor: '#4f46e5',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-  linkBold: {
-    color: '#4f46e5',
-    fontWeight: '600',
-  },
+  btn: { height: 48, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  btnPrimary: { backgroundColor: COLORS.navy },
+  btnDisabled: { opacity: 0.7 },
+  btnPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  orText: { textAlign: 'center', fontSize: 13, color: COLORS.textLight, marginVertical: 4 },
+  btnOutline: { borderWidth: 1.5, borderColor: COLORS.navy, backgroundColor: 'transparent' },
+  btnOutlineText: { color: COLORS.navy, fontSize: 14, fontWeight: '600' },
+  registerLink: { marginTop: 16, alignItems: 'center' },
+  registerText: { fontSize: 14, color: COLORS.textMuted },
+  registerBold: { color: COLORS.navy, fontWeight: '600' },
 });
 
 export default LoginScreen;

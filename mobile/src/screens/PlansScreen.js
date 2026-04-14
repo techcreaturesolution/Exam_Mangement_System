@@ -3,45 +3,34 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator
 import { COLORS } from '../constants/theme';
 import api from '../services/api';
 
-const PaymentScreen = ({ route, navigation }) => {
-  const { examId, examTitle } = route.params;
-  const [checking, setChecking] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
+const PlansScreen = ({ navigation }) => {
   const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => { checkAccessAndLoadPlans(); }, []);
+  useEffect(() => { fetchPlans(); }, []);
 
-  const checkAccessAndLoadPlans = async () => {
-    try {
-      const { data } = await api.get(`/payments/check-access/${examId}`);
-      if (data.hasAccess) {
-        setHasAccess(true);
-        navigation.replace('Exam', { examId });
-        return;
-      }
-    } catch (e) { /* proceed to show plans */ }
-
+  const fetchPlans = async () => {
     try {
       const { data } = await api.get('/payments/plans');
-      const activePlans = data.filter(p => p.isActive);
-      setPlans(activePlans);
-      if (activePlans.length > 0) setSelectedPlan(activePlans[Math.min(1, activePlans.length - 1)]?._id);
+      setPlans(data.filter(p => p.isActive));
+      if (data.length > 0) setSelectedPlan(data.find(p => p.isActive)?._id);
     } catch (e) { /* ignore */ }
-    setChecking(false);
+    finally { setLoading(false); }
   };
 
-  const handlePayment = async () => {
+  const handlePurchase = async () => {
     if (!selectedPlan) { Alert.alert('Error', 'Please select a plan'); return; }
     setProcessing(true);
     try {
       const { data: order } = await api.post('/payments/create-order', { planId: selectedPlan });
 
+      // Attempt Razorpay checkout
       try {
         const RazorpayCheckout = require('react-native-razorpay').default;
         const options = {
-          description: examTitle || 'TestBharti Subscription',
+          description: 'TestBharti Subscription',
           currency: order.currency,
           key: order.key,
           amount: order.amount,
@@ -57,43 +46,28 @@ const PaymentScreen = ({ route, navigation }) => {
           razorpay_signature: result.razorpay_signature,
         });
         Alert.alert('Payment Successful!', `Access granted until ${new Date(verification.payment.expiresAt).toLocaleDateString('en-IN')}`, [
-          { text: 'Start Exam', onPress: () => navigation.replace('Exam', { examId }) },
+          { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } catch (rzpError) {
         Alert.alert(
           'Payment Info',
-          'Razorpay native checkout requires a production build. Order created successfully.',
+          'Razorpay checkout requires a native build. In development, the order has been created. For production, build with react-native-razorpay.',
           [{ text: 'OK' }]
         );
       }
     } catch (e) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to process payment');
+      Alert.alert('Error', e.response?.data?.message || 'Failed to create order');
     } finally { setProcessing(false); }
   };
 
-  if (checking) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.navy} />
-        <Text style={styles.loadingText}>Checking access...</Text>
-      </View>
-    );
+  if (loading) {
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={COLORS.navy} /></View>;
   }
-
-  const selected = plans.find(p => p._id === selectedPlan);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Price Header */}
-      {selected && (
-        <View style={styles.priceHeader}>
-          <Text style={styles.priceHeaderSub}>{selected.name} · {selected.duration} days</Text>
-          <Text style={styles.priceHeaderAmount}>₹{selected.price}</Text>
-        </View>
-      )}
+      <Text style={styles.title}>Select your plan</Text>
 
-      {/* Plan Selection */}
-      <Text style={styles.sectionTitle}>Choose a plan</Text>
       {plans.map((plan, i) => {
         const isSelected = selectedPlan === plan._id;
         const isPopular = i === Math.min(1, plans.length - 1);
@@ -112,8 +86,8 @@ const PaymentScreen = ({ route, navigation }) => {
             <Text style={[styles.planName, isSelected && { color: COLORS.navy }]}>{plan.name}</Text>
             <Text style={styles.planDesc}>{plan.description || plan.features?.join(' · ') || ''}</Text>
             <View style={styles.priceRow}>
-              <Text style={styles.planPrice}>₹{plan.price}</Text>
-              <Text style={styles.planDuration}> / {plan.duration} days</Text>
+              <Text style={styles.price}>₹{plan.price}</Text>
+              <Text style={styles.priceSuffix}> / {plan.duration} days</Text>
             </View>
           </TouchableOpacity>
         );
@@ -121,25 +95,26 @@ const PaymentScreen = ({ route, navigation }) => {
 
       {plans.length === 0 && (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No plans available. Contact admin.</Text>
+          <Text style={styles.emptyText}>No plans available</Text>
         </View>
       )}
 
-      {/* Pay Button */}
       {plans.length > 0 && (
         <>
           <TouchableOpacity
-            style={[styles.payBtn, processing && { opacity: 0.7 }]}
-            onPress={handlePayment}
+            style={[styles.purchaseBtn, processing && { opacity: 0.7 }]}
+            onPress={handlePurchase}
             disabled={processing}
           >
             {processing ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.payBtnText}>Pay ₹{selected?.price || 0} →</Text>
+              <Text style={styles.purchaseBtnText}>
+                Continue with {plans.find(p => p._id === selectedPlan)?.name || 'plan'}
+              </Text>
             )}
           </TouchableOpacity>
-          <Text style={styles.securedText}>Secured by Razorpay</Text>
+          <Text style={styles.noRenewal}>No auto-renewal · Secured by Razorpay</Text>
         </>
       )}
 
@@ -149,19 +124,12 @@ const PaymentScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  loadingText: { fontSize: 15, color: COLORS.textMuted },
-  priceHeader: {
-    backgroundColor: COLORS.navy, borderRadius: 12, padding: 16,
-    marginHorizontal: 16, marginTop: 16, alignItems: 'center',
-  },
-  priceHeaderSub: { fontSize: 14, color: COLORS.navyBorder },
-  priceHeaderAmount: { fontSize: 36, fontWeight: '700', color: '#fff', marginTop: 4 },
-  sectionTitle: { fontSize: 14, color: COLORS.textMuted, paddingHorizontal: 16, marginTop: 16, marginBottom: 8 },
+  container: { flex: 1, backgroundColor: COLORS.bg, paddingHorizontal: 16 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 20, fontWeight: '700', color: COLORS.navy, paddingTop: 16, marginBottom: 16 },
   planCard: {
     backgroundColor: COLORS.white, borderWidth: 0.5, borderColor: COLORS.inputBorder,
-    borderRadius: 12, padding: 14, marginHorizontal: 16, marginBottom: 8,
+    borderRadius: 12, padding: 14, marginBottom: 10,
   },
   planCardSelected: { backgroundColor: COLORS.navyBg, borderWidth: 1.5, borderColor: COLORS.navy },
   popularBadge: {
@@ -172,16 +140,16 @@ const styles = StyleSheet.create({
   planName: { fontSize: 16, fontWeight: '700', color: COLORS.text },
   planDesc: { fontSize: 13, color: COLORS.textSecondary, marginTop: 3 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 6 },
-  planPrice: { fontSize: 22, fontWeight: '700', color: COLORS.navy },
-  planDuration: { fontSize: 13, color: COLORS.textMuted },
-  payBtn: {
-    backgroundColor: COLORS.orange, borderRadius: 10, height: 48,
-    justifyContent: 'center', alignItems: 'center', marginHorizontal: 16, marginTop: 12,
+  price: { fontSize: 22, fontWeight: '700', color: COLORS.navy },
+  priceSuffix: { fontSize: 13, color: COLORS.textMuted },
+  purchaseBtn: {
+    backgroundColor: COLORS.navy, borderRadius: 10, height: 48,
+    justifyContent: 'center', alignItems: 'center', marginTop: 8,
   },
-  payBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  securedText: { textAlign: 'center', fontSize: 12, color: COLORS.textLight, marginTop: 8 },
+  purchaseBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  noRenewal: { textAlign: 'center', fontSize: 12, color: COLORS.textMuted, marginTop: 8 },
   emptyState: { padding: 40, alignItems: 'center' },
   emptyText: { fontSize: 14, color: COLORS.textMuted },
 });
 
-export default PaymentScreen;
+export default PlansScreen;

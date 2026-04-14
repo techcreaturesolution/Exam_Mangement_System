@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   FiHome, FiGrid, FiBook, FiLayers, FiHelpCircle,
   FiFileText, FiLogOut, FiMenu, FiX, FiCreditCard, FiDollarSign,
+  FiUsers, FiBarChart2,
 } from 'react-icons/fi';
 import { useState } from 'react';
 
@@ -25,6 +26,8 @@ const Sidebar = () => {
     { path: '/exams', icon: <FiFileText />, label: 'Exams' },
     { path: '/payment-plans', icon: <FiCreditCard />, label: 'Payment Plans' },
     { path: '/payment-history', icon: <FiDollarSign />, label: 'Payments' },
+    { path: '/users', icon: <FiUsers />, label: 'Users' },
+    { path: '/reports', icon: <FiBarChart2 />, label: 'Reports' },
   ];
 
   return (
