@@ -23,12 +23,19 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'user'],
+      enum: ['master_admin', 'admin', 'user'],
       default: 'user',
+    },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
     },
     phone: {
       type: String,
       trim: true,
+    },
+    avatar: {
+      type: String,
     },
     isActive: {
       type: Boolean,

@@ -9,8 +9,14 @@ const getSubjects = async (req, res) => {
     if (category) filter.category = category;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
 
+    // Apply company scoping
+    if (req.companyFilter) {
+      Object.assign(filter, req.companyFilter);
+    }
+
     const subjects = await Subject.find(filter)
       .populate('category', 'name examType')
+      .populate('company', 'name')
       .sort({ order: 1, createdAt: -1 });
     res.json(subjects);
   } catch (error) {
@@ -36,7 +42,11 @@ const getSubject = async (req, res) => {
 // @route   POST /api/subjects
 const createSubject = async (req, res) => {
   try {
-    const subject = await Subject.create(req.body);
+    const data = { ...req.body };
+    if (req.companyId) {
+      data.company = req.companyId;
+    }
+    const subject = await Subject.create(data);
     const populated = await subject.populate('category', 'name examType');
     res.status(201).json(populated);
   } catch (error) {

@@ -8,13 +8,13 @@ const {
   deleteSubject,
   getSubjectsByCategory,
 } = require('../controllers/subjectController');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, adminOnly, companyScope } = require('../middleware/auth');
 
-router.get('/', getSubjects);
-router.get('/:id', getSubject);
-router.get('/category/:categoryId', getSubjectsByCategory);
-router.post('/', protect, adminOnly, createSubject);
-router.put('/:id', protect, adminOnly, updateSubject);
-router.delete('/:id', protect, adminOnly, deleteSubject);
+router.get('/', protect, companyScope, getSubjects);
+router.get('/:id', protect, getSubject);
+router.get('/category/:categoryId', protect, getSubjectsByCategory);
+router.post('/', protect, adminOnly, companyScope, createSubject);
+router.put('/:id', protect, adminOnly, companyScope, updateSubject);
+router.delete('/:id', protect, adminOnly, companyScope, deleteSubject);
 
 module.exports = router;

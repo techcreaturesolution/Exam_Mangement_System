@@ -11,16 +11,16 @@ const {
   getExamHistory,
   getExamStats,
 } = require('../controllers/examController');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, adminOnly, companyScope } = require('../middleware/auth');
 
 // Admin routes
-router.get('/stats', protect, adminOnly, getExamStats);
-router.post('/', protect, adminOnly, createExam);
-router.put('/:id', protect, adminOnly, updateExam);
-router.delete('/:id', protect, adminOnly, deleteExam);
+router.get('/stats', protect, adminOnly, companyScope, getExamStats);
+router.post('/', protect, adminOnly, companyScope, createExam);
+router.put('/:id', protect, adminOnly, companyScope, updateExam);
+router.delete('/:id', protect, adminOnly, companyScope, deleteExam);
 
 // Public / User routes
-router.get('/', protect, getExams);
+router.get('/', protect, companyScope, getExams);
 router.get('/history', protect, getExamHistory);
 router.get('/:id', protect, getExam);
 router.post('/:id/start', protect, startExam);

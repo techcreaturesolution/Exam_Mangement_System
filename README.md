@@ -1,244 +1,144 @@
-# Exam Management System
+# Exam Management System - Multi-Tenant SaaS Platform
 
-A full-stack MERN (MongoDB, Express, React, Node.js) application for managing Practice and Mock exams with a React Native mobile app.
+A complete exam management platform built with **MERN Stack** (Backend + Admin Dashboard) and **Flutter** (Mobile App) featuring multi-tenant architecture, anti-cheat proctoring, and Razorpay payment integration.
 
-## Features
+## Architecture
 
-### Master Admin Panel (React Dashboard)
-- **Dashboard** - Overview stats (total exams, questions, attempts)
-- **Category Management** - Create/edit/delete exam categories (Practice, Mock, or Both)
-- **Subject Management** - Manage subjects under categories
-- **Level Management** - Difficulty levels (Easy, Medium, Hard, Expert) with color coding
-- **Question Bank** - Add individual questions or bulk upload via Excel/CSV
-- **Exam Management** - Create Practice & Mock exams with:
-  - Configurable duration/timing
-  - Passing percentage
-  - Negative marking toggle
-  - Question shuffling
-  - Max attempts limit
-  - Show/hide results & answers
-  - Custom instructions
-- **Payment Plans** - Create subscription plans (All Access, Category, Subject, Single Exam)
-- **Payment History** - View all Razorpay transactions, revenue stats, status filters
+### User Roles
+- **Master Admin** (Service Provider): Manages companies, onboards exam conductors, global analytics
+- **Company Admin** (Exam Conductor): Creates exams, manages questions, publishes exams for their company
+- **Student** (User): Takes practice & mock exams, views results, manages subscriptions
 
-### Mobile App (React Native/Expo)
-- **User Registration & Login**
-- **Practice Exam Mode** - Practice at your own pace with category-wise questions
-- **Mock Exam Mode** - Timed exam simulation with real exam conditions
-- **Razorpay Payment** - Pay for exam access before starting (plan-based access control)
-- **My Subscriptions** - View active plans and payment history
-- **Exam Flow** - Question navigation, timer, progress tracking
-- **Results** - Detailed score breakdown (correct, wrong, skipped, time spent)
-- **Exam History** - Track all past attempts and progress
-
-## Tech Stack
-
+### Tech Stack
 | Component | Technology |
-|-----------|-----------|
-| Backend API | Node.js, Express.js |
-| Database | MongoDB with Mongoose |
-| Admin Dashboard | React (Vite), React Router, Axios |
-| Mobile App | React Native (Expo) |
-| Authentication | JWT (JSON Web Tokens) |
-| Payment Gateway | Razorpay |
-| File Upload | Multer, XLSX parser |
+|-----------|------------|
+| Backend API | Node.js + Express + MongoDB |
+| Admin Dashboard | React + Vite |
+| Mobile App | **Flutter** (Android & iOS) |
+| Payments | Razorpay |
+| Auth | JWT Bearer Tokens |
 
 ## Project Structure
 
 ```
 exam-management-system/
-├── server/                  # Backend API
+├── server/          # Node.js + Express API
 │   ├── src/
-│   │   ├── config/         # Database configuration
-│   │   ├── controllers/    # Route controllers
-│   │   ├── middleware/     # Auth middleware
-│   │   ├── models/         # Mongoose models
-│   │   ├── routes/         # API routes
-│   │   └── seeders/        # Database seeders
-│   └── package.json
-├── admin/                   # React Admin Dashboard
-│   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   ├── context/        # Auth context
-│   │   ├── pages/          # Page components
-│   │   └── services/       # API service
-│   └── package.json
-├── mobile/                  # React Native Mobile App
-│   ├── src/
-│   │   ├── screens/        # App screens
-│   │   ├── context/        # Auth context
-│   │   └── services/       # API service
-│   └── package.json
-└── package.json             # Root workspace
+│   │   ├── models/       # MongoDB models (User, Company, Exam, Question, etc.)
+│   │   ├── controllers/  # Route handlers
+│   │   ├── routes/       # API routes
+│   │   ├── middleware/    # Auth, company scoping
+│   │   └── seeders/      # Database seeder
+│   └── uploads/
+├── admin/           # React Admin Dashboard
+│   └── src/
+│       ├── pages/        # Dashboard, Companies, Exams, Questions, etc.
+│       ├── components/   # Sidebar, Layout, ProtectedRoute
+│       └── services/     # API service
+└── mobile/          # Flutter Mobile App
+    └── lib/
+        ├── screens/      # Login, Home, Exam, Results, etc.
+        ├── providers/    # Auth state management
+        ├── services/     # API service
+        └── constants/    # Theme, API endpoints
 ```
 
-## Getting Started
+## Quick Start
 
-### Prerequisites
-- Node.js >= 18
-- MongoDB (local or Atlas)
-- npm or yarn
-- Expo CLI (for mobile app)
-
-### 1. Clone & Install
-
+### 1. Backend Server
 ```bash
-git clone <repo-url>
-cd exam-management-system
-
-# Install server & admin dependencies
+cd server
+cp .env.example .env
+# Edit .env with your MongoDB URI and Razorpay keys
 npm install
-
-# Install mobile app dependencies
-cd mobile && npm install && cd ..
-```
-
-### 2. Configure Environment
-
-```bash
-# Copy the example env file
-cp server/.env.example server/.env
-
-# Edit server/.env with your MongoDB URI
-```
-
-**Server `.env` variables:**
-```
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/exam_management
-JWT_SECRET=your_secret_key_here
-JWT_EXPIRES_IN=7d
-RAZORPAY_KEY_ID=rzp_live_SdMS0vJY4eYUBl
-RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-```
-
-### 3. Seed Default Data
-
-```bash
-cd server && npm run seed
-```
-
-This creates:
-- **Admin account**: `admin@examportal.com` / `admin123456`
-- **Default levels**: Easy, Medium, Hard, Expert
-
-### 4. Start Development
-
-```bash
-# From project root - start both server & admin
+npm run seed    # Creates Master Admin + Demo Company
 npm run dev
-
-# Or start individually:
-npm run server    # Backend on http://localhost:5000
-npm run admin     # Admin panel on http://localhost:5173
 ```
 
-### 5. Start Mobile App
+**Default Credentials:**
+- Master Admin: `admin@examportal.com` / `admin123456`
+- Company Admin: `companyadmin@demoacademy.com` / `admin123456`
 
+### 2. Admin Dashboard
+```bash
+cd admin
+npm install
+npm run dev
+# Opens at http://localhost:5173
+```
+
+### 3. Flutter Mobile App
 ```bash
 cd mobile
-npx expo start
+flutter pub get
+flutter run
 ```
 
-Scan the QR code with Expo Go app on your phone.
+## Features
 
-> **Note:** Update the API URL in `mobile/src/services/api.js` to point to your server's IP address instead of `localhost`.
+### Multi-Tenant Data Scoping
+- All data (categories, subjects, questions, exams) is scoped to companies
+- Company admins can only see their own company's data
+- Master admin has global visibility with optional company filtering
+
+### Anti-Cheat / Proctoring
+| Feature | Description |
+|---------|-------------|
+| Screenshot Prevention | Disables screenshots during exam using `no_screenshot` plugin |
+| App Switch Detection | Detects when user switches to another app via `WidgetsBindingObserver` |
+| Screen Share Prevention | Blocks screen sharing during active exams |
+| Violation Tracking | All violations logged with type, timestamp, user, exam |
+| Auto-Submit | Exam auto-submits after configurable max violations |
+| Warning System | Visual warnings shown to student with violation count |
+
+### Payment Integration (Razorpay)
+- Plan types: All Access, Category, Subject, Exam-level
+- Payment verification via Razorpay signature
+- Subscription tracking with expiry
+- Per-company Razorpay configuration
+
+### Admin Dashboard
+- **Master Admin**: Company management (CRUD), global stats, plan management, admin onboarding
+- **Company Admin**: Exam creation, question bank, user management, violation logs, reports
+
+### Mobile App (Flutter)
+- TestBharti design (Navy #1E3A6E + Orange #E87722)
+- Bottom navigation: Home, Practice, Tests, Me
+- Practice & Mock exam modes with timer
+- Question navigation dots, flagging, progress bar
+- Score circle with detailed results
+- Exam history, analytics, subscriptions, settings
 
 ## API Endpoints
 
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register user |
-| POST | `/api/auth/login` | User login |
-| POST | `/api/auth/admin/login` | Admin login |
-| GET | `/api/auth/me` | Get current user |
+### Auth
+- `POST /api/auth/register` - User registration (with optional company code)
+- `POST /api/auth/login` - User login
+- `POST /api/auth/admin/login` - Admin login (master_admin or admin)
 
-### Categories (Admin)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/categories` | List categories |
-| POST | `/api/categories` | Create category |
-| PUT | `/api/categories/:id` | Update category |
-| DELETE | `/api/categories/:id` | Delete category |
-
-### Subjects (Admin)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/subjects` | List subjects |
-| POST | `/api/subjects` | Create subject |
-| PUT | `/api/subjects/:id` | Update subject |
-| DELETE | `/api/subjects/:id` | Delete subject |
-
-### Levels (Admin)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/levels` | List levels |
-| POST | `/api/levels` | Create level |
-| PUT | `/api/levels/:id` | Update level |
-| DELETE | `/api/levels/:id` | Delete level |
-
-### Questions (Admin)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/questions` | List questions (paginated) |
-| POST | `/api/questions` | Create question |
-| PUT | `/api/questions/:id` | Update question |
-| DELETE | `/api/questions/:id` | Delete question |
-| POST | `/api/questions/bulk-upload` | Bulk upload from Excel/CSV |
-| GET | `/api/questions/count` | Get question count by filters |
+### Companies (Master Admin only)
+- `GET /api/companies` - List all companies
+- `POST /api/companies` - Create company (with optional initial admin)
+- `GET /api/companies/stats/overview` - Platform statistics
+- `GET /api/companies/:id/admins` - Company admins
+- `POST /api/companies/:id/admins` - Add company admin
 
 ### Exams
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/exams` | List exams |
-| POST | `/api/exams` | Create exam (Admin) |
-| PUT | `/api/exams/:id` | Update exam (Admin) |
-| DELETE | `/api/exams/:id` | Delete exam (Admin) |
-| GET | `/api/exams/stats` | Dashboard stats (Admin) |
-| POST | `/api/exams/:id/start` | Start exam attempt |
-| POST | `/api/exams/:id/submit` | Submit exam answers |
-| GET | `/api/exams/history` | User's exam history |
+- `GET /api/exams` - List exams (company-scoped)
+- `POST /api/exams` - Create exam with anti-cheat config
+- `POST /api/exams/:id/start` - Start exam attempt
+- `POST /api/exams/:id/submit` - Submit answers
 
-### Payments (Razorpay)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/payments/plans` | List payment plans |
-| POST | `/api/payments/plans` | Create plan (Admin) |
-| PUT | `/api/payments/plans/:id` | Update plan (Admin) |
-| DELETE | `/api/payments/plans/:id` | Delete plan (Admin) |
-| GET | `/api/payments/all` | All payments (Admin) |
-| POST | `/api/payments/create-order` | Create Razorpay order |
-| POST | `/api/payments/verify` | Verify payment signature |
-| GET | `/api/payments/my-subscriptions` | User's active plans |
-| GET | `/api/payments/my-payments` | User's payment history |
-| GET | `/api/payments/check-access/:examId` | Check exam access |
+### Violations
+- `POST /api/violations` - Report violation during exam
+- `GET /api/violations` - View violations (admin, company-scoped)
 
-## Bulk Upload Format
+## Environment Variables
 
-Upload questions via Excel (.xlsx) or CSV with these columns:
-
-| Column | Required | Description |
-|--------|----------|-------------|
-| Question | Yes | Question text |
-| Option A | Yes | First option |
-| Option B | Yes | Second option |
-| Option C | Yes | Third option |
-| Option D | Yes | Fourth option |
-| Correct Answer | Yes | A, B, C, or D |
-| Explanation | No | Answer explanation |
-| Marks | No | Points (default: 1) |
-| Negative Marks | No | Negative marks (default: 0) |
-
-## Default Admin Credentials
-
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/exam_management
+JWT_SECRET=your_jwt_secret
+RAZORPAY_KEY_ID=rzp_live_xxxxx
+RAZORPAY_KEY_SECRET=your_razorpay_secret
 ```
-Email: admin@examportal.com
-Password: admin123456
-```
-
-> ⚠️ **Change the default password after first login in production!**
-
-## License
-
-MIT

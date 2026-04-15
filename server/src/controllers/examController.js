@@ -14,10 +14,16 @@ const getExams = async (req, res) => {
     if (level) filter.level = level;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
 
+    // Apply company scoping
+    if (req.companyFilter) {
+      Object.assign(filter, req.companyFilter);
+    }
+
     const exams = await Exam.find(filter)
       .populate('category', 'name')
       .populate('subject', 'name')
       .populate('level', 'name color')
+      .populate('company', 'name')
       .sort({ createdAt: -1 });
     res.json(exams);
   } catch (error) {
@@ -33,6 +39,7 @@ const getExam = async (req, res) => {
       .populate('category', 'name')
       .populate('subject', 'name')
       .populate('level', 'name color')
+      .populate('company', 'name')
       .populate({
         path: 'questions',
         select: '-isActive -createdAt -updatedAt',
@@ -57,20 +64,28 @@ const createExam = async (req, res) => {
       title, description, examType, category, subject, level,
       totalQuestions, duration, passingPercentage, negativeMarking,
       shuffleQuestions, showResult, showAnswers, maxAttempts,
-      instructions, startDate, endDate,
+      instructions, startDate, endDate, antiCheat,
     } = req.body;
 
     // Auto-select questions if not provided
     let { questions } = req.body;
+    const questionFilter = {
+      category,
+      subject,
+      level,
+      isActive: true,
+      examType: { $in: [examType, 'both'] },
+    };
+
+    // Scope questions to company
+    if (req.companyId) {
+      questionFilter.company = req.companyId;
+    } else if (req.body.company) {
+      questionFilter.company = req.body.company;
+    }
+
     if (!questions || questions.length === 0) {
-      const filter = {
-        category,
-        subject,
-        level,
-        isActive: true,
-        examType: { $in: [examType, 'both'] },
-      };
-      const availableQuestions = await Question.find(filter).select('_id');
+      const availableQuestions = await Question.find(questionFilter).select('_id');
 
       if (availableQuestions.length < totalQuestions) {
         return res.status(400).json({
@@ -87,12 +102,27 @@ const createExam = async (req, res) => {
     const questionDocs = await Question.find({ _id: { $in: questions } });
     const totalMarks = questionDocs.reduce((sum, q) => sum + q.marks, 0);
 
-    const exam = await Exam.create({
+    const examData = {
       title, description, examType, category, subject, level,
       totalQuestions, duration, passingPercentage, totalMarks,
       negativeMarking, shuffleQuestions, showResult, showAnswers,
       maxAttempts, instructions, questions, startDate, endDate,
-    });
+      createdBy: req.user._id,
+    };
+
+    // Add company scope
+    if (req.companyId) {
+      examData.company = req.companyId;
+    } else if (req.body.company) {
+      examData.company = req.body.company;
+    }
+
+    // Add anti-cheat settings
+    if (antiCheat) {
+      examData.antiCheat = antiCheat;
+    }
+
+    const exam = await Exam.create(examData);
 
     const populated = await exam.populate([
       { path: 'category', select: 'name' },
@@ -212,6 +242,7 @@ const startExam = async (req, res) => {
         totalMarks: exam.totalMarks,
         examType: exam.examType,
         instructions: exam.instructions,
+        antiCheat: exam.antiCheat,
       },
       questions,
     });
@@ -344,29 +375,31 @@ const getExamHistory = async (req, res) => {
   }
 };
 
-// @desc    Get dashboard stats (admin)
+// @desc    Get exam stats (admin)
 // @route   GET /api/exams/stats
 const getExamStats = async (req, res) => {
   try {
-    const totalExams = await Exam.countDocuments();
-    const practiceExams = await Exam.countDocuments({ examType: 'practice' });
-    const mockExams = await Exam.countDocuments({ examType: 'mock' });
-    const totalQuestions = await Question.countDocuments();
-    const totalAttempts = await ExamAttempt.countDocuments({ status: 'completed' });
+    const examFilter = {};
+    if (req.companyFilter) {
+      Object.assign(examFilter, req.companyFilter);
+    }
 
-    const recentAttempts = await ExamAttempt.find({ status: 'completed' })
-      .populate('user', 'name email')
-      .populate('exam', 'title examType')
-      .sort({ createdAt: -1 })
-      .limit(10);
+    const totalExams = await Exam.countDocuments(examFilter);
+    const activeExams = await Exam.countDocuments({ ...examFilter, isActive: true });
+    const totalAttempts = await ExamAttempt.countDocuments();
+    const completedAttempts = await ExamAttempt.countDocuments({ status: 'completed' });
+    const questionFilter = {};
+    if (req.companyFilter) {
+      Object.assign(questionFilter, req.companyFilter);
+    }
+    const totalQuestions = await Question.countDocuments(questionFilter);
 
     res.json({
       totalExams,
-      practiceExams,
-      mockExams,
-      totalQuestions,
+      activeExams,
       totalAttempts,
-      recentAttempts,
+      completedAttempts,
+      totalQuestions,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

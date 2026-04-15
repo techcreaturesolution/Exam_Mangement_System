@@ -31,6 +31,11 @@ const examSchema = new mongoose.Schema(
       ref: 'Level',
       required: [true, 'Level is required'],
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: [true, 'Company is required'],
+    },
     totalQuestions: {
       type: Number,
       required: [true, 'Total questions is required'],
@@ -86,6 +91,22 @@ const examSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    // Anti-cheat / Proctoring settings
+    antiCheat: {
+      preventScreenshot: { type: Boolean, default: true },
+      preventScreenShare: { type: Boolean, default: true },
+      preventAppSwitch: { type: Boolean, default: true },
+      autoSubmitOnViolation: { type: Boolean, default: false },
+      maxViolations: { type: Number, default: 3 },
+      warningMessage: {
+        type: String,
+        default: 'Warning: Switching apps or taking screenshots during the exam is not allowed.',
+      },
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
     startDate: {
       type: Date,

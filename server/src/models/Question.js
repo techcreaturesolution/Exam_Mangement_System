@@ -38,6 +38,11 @@ const questionSchema = new mongoose.Schema(
       ref: 'Level',
       required: [true, 'Level is required'],
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: [true, 'Company is required'],
+    },
     examType: {
       type: String,
       enum: ['practice', 'mock', 'both'],

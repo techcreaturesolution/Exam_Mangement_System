@@ -11,7 +11,7 @@ const {
   bulkUploadQuestions,
   getQuestionCount,
 } = require('../controllers/questionController');
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, adminOnly, companyScope } = require('../middleware/auth');
 
 // Multer config for file uploads
 const storage = multer.diskStorage({
@@ -40,12 +40,12 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
 
-router.get('/count', protect, getQuestionCount);
-router.get('/', protect, adminOnly, getQuestions);
+router.get('/count', protect, companyScope, getQuestionCount);
+router.get('/', protect, adminOnly, companyScope, getQuestions);
 router.get('/:id', protect, adminOnly, getQuestion);
-router.post('/', protect, adminOnly, createQuestion);
+router.post('/', protect, adminOnly, companyScope, createQuestion);
 router.put('/:id', protect, adminOnly, updateQuestion);
 router.delete('/:id', protect, adminOnly, deleteQuestion);
-router.post('/bulk-upload', protect, adminOnly, upload.single('file'), bulkUploadQuestions);
+router.post('/bulk-upload', protect, adminOnly, companyScope, upload.single('file'), bulkUploadQuestions);
 
 module.exports = router;

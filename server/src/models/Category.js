@@ -17,6 +17,11 @@ const categorySchema = new mongoose.Schema(
       required: [true, 'Exam type is required'],
       default: 'both',
     },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      required: [true, 'Company is required'],
+    },
     icon: {
       type: String,
       default: 'book',

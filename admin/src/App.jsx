@@ -15,6 +15,8 @@ import PaymentPlans from './pages/PaymentPlans';
 import PaymentHistory from './pages/PaymentHistory';
 import UserManager from './pages/UserManager';
 import Reports from './pages/Reports';
+import Companies from './pages/Companies';
+import Violations from './pages/Violations';
 import './App.css';
 
 function App() {
@@ -32,6 +34,7 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="companies" element={<Companies />} />
             <Route path="categories" element={<Categories />} />
             <Route path="subjects" element={<Subjects />} />
             <Route path="levels" element={<Levels />} />
@@ -40,6 +43,7 @@ function App() {
             <Route path="payment-plans" element={<PaymentPlans />} />
             <Route path="payment-history" element={<PaymentHistory />} />
             <Route path="users" element={<UserManager />} />
+            <Route path="violations" element={<Violations />} />
             <Route path="reports" element={<Reports />} />
           </Route>
         </Routes>

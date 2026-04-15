@@ -15,6 +15,11 @@ const getQuestions = async (req, res) => {
     if (examType) filter.examType = { $in: [examType, 'both'] };
     if (isActive !== undefined) filter.isActive = isActive === 'true';
 
+    // Apply company scoping
+    if (req.companyFilter) {
+      Object.assign(filter, req.companyFilter);
+    }
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const total = await Question.countDocuments(filter);
 
@@ -22,6 +27,7 @@ const getQuestions = async (req, res) => {
       .populate('category', 'name')
       .populate('subject', 'name')
       .populate('level', 'name color')
+      .populate('company', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -58,7 +64,11 @@ const getQuestion = async (req, res) => {
 // @route   POST /api/questions
 const createQuestion = async (req, res) => {
   try {
-    const question = await Question.create(req.body);
+    const data = { ...req.body };
+    if (req.companyId) {
+      data.company = req.companyId;
+    }
+    const question = await Question.create(data);
     const populated = await question.populate([
       { path: 'category', select: 'name' },
       { path: 'subject', select: 'name' },
@@ -142,7 +152,7 @@ const bulkUploadQuestions = async (req, res) => {
           continue;
         }
 
-        questions.push({
+        const questionData = {
           questionText: row['Question'],
           options,
           explanation: row['Explanation'] || '',
@@ -152,7 +162,16 @@ const bulkUploadQuestions = async (req, res) => {
           examType: examType || 'both',
           marks: row['Marks'] || 1,
           negativeMarks: row['Negative Marks'] || 0,
-        });
+        };
+
+        // Add company scope
+        if (req.companyId) {
+          questionData.company = req.companyId;
+        } else if (req.body.company) {
+          questionData.company = req.body.company;
+        }
+
+        questions.push(questionData);
       } catch (err) {
         errors.push({ row: i + 2, error: err.message });
       }
@@ -186,6 +205,11 @@ const getQuestionCount = async (req, res) => {
     if (subject) filter.subject = subject;
     if (level) filter.level = level;
     if (examType) filter.examType = { $in: [examType, 'both'] };
+
+    // Apply company scoping
+    if (req.companyFilter) {
+      Object.assign(filter, req.companyFilter);
+    }
 
     const count = await Question.countDocuments(filter);
     res.json({ count });
