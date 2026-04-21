@@ -123,7 +123,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
               Color dotColor;
               if (q['isCorrect'] == true) {
                 dotColor = AppColors.success;
-              } else if (q['selectedOption'] == null || q['selectedOption'] == '') {
+              } else if (q['selectedAnswer'] == null || q['selectedAnswer'] == '') {
                 dotColor = AppColors.warning;
               } else {
                 dotColor = AppColors.error;
@@ -197,7 +197,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
   }
 
   Widget _buildQuestion(Map<String, dynamic> question) {
-    final selectedOption = question['selectedOption']?.toString() ?? '';
+    final selectedOption = question['selectedAnswer']?.toString() ?? '';
     final correctAnswer = question['correctAnswer']?.toString() ?? '';
     final isCorrect = question['isCorrect'] ?? false;
     final isSkipped = selectedOption.isEmpty;

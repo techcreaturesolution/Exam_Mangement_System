@@ -221,7 +221,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
       final answers = _questions.asMap().entries.map((e) {
         return {
           'questionId': e.value['_id'],
-          'selectedOption': _answers[e.key] ?? '',
+          'selectedAnswer': _answers[e.key] ?? '',
         };
       }).toList();
 
