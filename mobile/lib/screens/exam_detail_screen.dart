@@ -1,21 +1,58 @@
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
+import '../services/api_service.dart';
+import '../constants/api_constants.dart';
 
-class ExamDetailScreen extends StatelessWidget {
+class ExamDetailScreen extends StatefulWidget {
   const ExamDetailScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final exam = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (exam == null) return const Scaffold(body: Center(child: Text('Exam not found')));
+  State<ExamDetailScreen> createState() => _ExamDetailScreenState();
+}
 
-    final antiCheat = exam['antiCheat'] as Map<String, dynamic>? ?? {};
+class _ExamDetailScreenState extends State<ExamDetailScreen> {
+  final ApiService _api = ApiService();
+  Map<String, dynamic>? _exam;
+  int _attemptCount = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_exam == null) {
+      _exam = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (_exam != null) _loadAttemptCount();
+    }
+  }
+
+  Future<void> _loadAttemptCount() async {
+    try {
+      final history = await _api.get(ApiConstants.examHistory);
+      int count = 0;
+      for (final h in history) {
+        if (h['exam']?['_id'] == _exam!['_id']) count++;
+      }
+      setState(() {
+        _attemptCount = count;
+      });
+    } catch (e) {
+      // Failed to load attempts, continue with default
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_exam == null) return const Scaffold(body: Center(child: Text('Exam not found')));
+
+    final antiCheat = _exam!['antiCheat'] as Map<String, dynamic>? ?? {};
     final hasAntiCheat = antiCheat['preventScreenshot'] == true ||
         antiCheat['preventScreenShare'] == true ||
         antiCheat['preventAppSwitch'] == true;
+    final isDemo = _exam!['isDemo'] == true;
+    final maxAttempts = _exam!['maxAttempts'] ?? 0;
+    final isLimitReached = maxAttempts > 0 && _attemptCount >= maxAttempts;
 
     return Scaffold(
-      appBar: AppBar(title: Text(exam['title'] ?? 'Exam Details')),
+      appBar: AppBar(title: Text(_exam!['title'] ?? 'Exam Details')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -28,28 +65,97 @@ class ExamDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(exam['title'] ?? '', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                    if (exam['description'] != null && exam['description'].isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(exam['description'], style: const TextStyle(color: AppColors.textSecondary)),
+                    // Title and badges
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(_exam!['title'] ?? '', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Type and Demo badges
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _exam!['examType'] == 'practice'
+                                ? AppColors.success.withValues(alpha: 0.1)
+                                : AppColors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            (_exam!['examType'] ?? '').toString().toUpperCase(),
+                            style: TextStyle(
+                              color: _exam!['examType'] == 'practice' ? AppColors.success : AppColors.orange,
+                              fontSize: 12, fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (isDemo)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('FREE DEMO',
+                                style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                      ],
+                    ),
+                    if (_exam!['description'] != null && _exam!['description'].toString().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(_exam!['description'], style: const TextStyle(color: AppColors.textSecondary)),
                     ],
                     const SizedBox(height: 20),
-                    _infoRow(Icons.quiz, 'Questions', '${exam['totalQuestions']}'),
-                    _infoRow(Icons.timer, 'Duration', '${exam['duration']} minutes'),
-                    _infoRow(Icons.star, 'Total Marks', '${exam['totalMarks']}'),
-                    _infoRow(Icons.check_circle, 'Passing', '${exam['passingPercentage']}%'),
-                    if (exam['negativeMarking'] == true)
+                    _infoRow(Icons.quiz, 'Questions', '${_exam!['totalQuestions']}'),
+                    _infoRow(Icons.timer, 'Duration', '${_exam!['duration']} minutes'),
+                    _infoRow(Icons.star, 'Total Marks', '${_exam!['totalMarks']}'),
+                    _infoRow(Icons.check_circle, 'Passing', '${_exam!['passingPercentage']}%'),
+                    if (_exam!['negativeMarking'] == true)
                       _infoRow(Icons.remove_circle, 'Negative Marking', 'Yes'),
-                    if (exam['maxAttempts'] != null && exam['maxAttempts'] > 0)
-                      _infoRow(Icons.replay, 'Max Attempts', '${exam['maxAttempts']}'),
+                    _infoRow(Icons.replay, 'Attempts',
+                        maxAttempts > 0 ? '$_attemptCount / $maxAttempts' : '$_attemptCount (Unlimited)'),
+                    if (_exam!['allowReview'] == true)
+                      _infoRow(Icons.rate_review, 'Paper Review', 'Enabled'),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
+            // Demo exam info
+            if (isDemo)
+              Card(
+                color: Colors.green.withValues(alpha: 0.08),
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.card_giftcard, color: Colors.green, size: 28),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Free Demo Exam', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                            SizedBox(height: 4),
+                            Text('This exam is free to take. No subscription required.',
+                                style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Anti-cheat Warning
-            if (hasAntiCheat)
+            if (hasAntiCheat) ...[
+              const SizedBox(height: 16),
               Card(
                 color: AppColors.warning.withValues(alpha: 0.1),
                 child: Padding(
@@ -77,9 +183,10 @@ class ExamDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            ],
 
             // Instructions
-            if (exam['instructions'] != null && exam['instructions'].isNotEmpty) ...[
+            if (_exam!['instructions'] != null && _exam!['instructions'].toString().isNotEmpty) ...[
               const SizedBox(height: 16),
               Card(
                 child: Padding(
@@ -89,7 +196,35 @@ class ExamDetailScreen extends StatelessWidget {
                     children: [
                       const Text('Instructions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      Text(exam['instructions'], style: const TextStyle(color: AppColors.textSecondary)),
+                      Text(_exam!['instructions'], style: const TextStyle(color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // Limit reached warning
+            if (isLimitReached) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: AppColors.error.withValues(alpha: 0.08),
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.block, color: AppColors.error, size: 28),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Attempt Limit Reached', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
+                            SizedBox(height: 4),
+                            Text('You have used all available attempts for this exam.',
+                                style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -101,9 +236,12 @@ class ExamDetailScreen extends StatelessWidget {
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Start Exam', style: TextStyle(fontSize: 18)),
-                onPressed: () => Navigator.pushReplacementNamed(context, '/exam-take', arguments: exam),
+                icon: Icon(isLimitReached ? Icons.block : (_attemptCount > 0 ? Icons.replay : Icons.play_arrow)),
+                label: Text(
+                  isLimitReached ? 'Limit Reached' : (_attemptCount > 0 ? 'Retake Exam' : 'Start Exam'),
+                  style: const TextStyle(fontSize: 18),
+                ),
+                onPressed: isLimitReached ? null : () => Navigator.pushReplacementNamed(context, '/exam-take', arguments: _exam),
               ),
             ),
             const SizedBox(height: 16),

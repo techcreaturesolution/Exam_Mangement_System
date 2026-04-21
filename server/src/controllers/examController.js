@@ -107,6 +107,8 @@ const createExam = async (req, res) => {
       totalQuestions, duration, passingPercentage, totalMarks,
       negativeMarking, shuffleQuestions, showResult, showAnswers,
       maxAttempts, instructions, questions, startDate, endDate,
+      isDemo: req.body.isDemo || false,
+      allowReview: req.body.allowReview !== false,
       createdBy: req.user._id,
     };
 
@@ -406,6 +408,207 @@ const getExamStats = async (req, res) => {
   }
 };
 
+// @desc    Review exam attempt (show correct answers)
+// @route   GET /api/exams/review/:attemptId
+const reviewAttempt = async (req, res) => {
+  try {
+    const attempt = await ExamAttempt.findById(req.params.attemptId)
+      .populate({
+        path: 'exam',
+        select: 'title examType allowReview showAnswers totalMarks passingPercentage duration',
+      })
+      .populate({
+        path: 'answers.question',
+        select: 'questionText options marks negativeMarks explanation',
+      });
+
+    if (!attempt) {
+      return res.status(404).json({ message: 'Attempt not found' });
+    }
+
+    // Verify ownership
+    if (attempt.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to review this attempt' });
+    }
+
+    if (attempt.status !== 'completed') {
+      return res.status(400).json({ message: 'Exam is still in progress' });
+    }
+
+    // Check if review is allowed
+    if (!attempt.exam.allowReview && !attempt.exam.showAnswers) {
+      return res.status(403).json({ message: 'Review is not enabled for this exam' });
+    }
+
+    // Build review data with correct answers
+    const reviewData = {
+      _id: attempt._id,
+      exam: attempt.exam,
+      obtainedMarks: attempt.obtainedMarks,
+      totalMarks: attempt.totalMarks,
+      percentage: attempt.percentage,
+      isPassed: attempt.isPassed,
+      correctAnswers: attempt.correctAnswers,
+      wrongAnswers: attempt.wrongAnswers,
+      unanswered: attempt.unanswered,
+      timeSpent: attempt.timeSpent,
+      startTime: attempt.startTime,
+      endTime: attempt.endTime,
+      questions: attempt.answers.map((ans) => {
+        const q = ans.question;
+        if (!q) return null;
+        const correctOptionIndex = q.options.findIndex((opt) => opt.isCorrect);
+        return {
+          _id: q._id,
+          questionText: q.questionText,
+          options: q.options.map((opt) => ({
+            text: opt.text,
+            isCorrect: opt.isCorrect,
+          })),
+          marks: q.marks,
+          explanation: q.explanation || null,
+          selectedOption: ans.selectedOption,
+          correctOption: correctOptionIndex,
+          isCorrect: ans.isCorrect,
+          marksObtained: ans.marksObtained,
+        };
+      }).filter(Boolean),
+    };
+
+    res.json(reviewData);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get performance report for user
+// @route   GET /api/exams/performance
+const getPerformanceReport = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get all completed attempts
+    const attempts = await ExamAttempt.find({
+      user: userId,
+      status: 'completed',
+    })
+      .populate({
+        path: 'exam',
+        select: 'title examType category subject level',
+        populate: [
+          { path: 'category', select: 'name' },
+          { path: 'subject', select: 'name' },
+          { path: 'level', select: 'name' },
+        ],
+      })
+      .sort({ createdAt: -1 });
+
+    // Overall stats
+    const totalAttempts = attempts.length;
+    const totalPassed = attempts.filter((a) => a.isPassed).length;
+    const avgPercentage = totalAttempts > 0
+      ? Math.round(attempts.reduce((sum, a) => sum + a.percentage, 0) / totalAttempts)
+      : 0;
+    const totalTimeSpent = attempts.reduce((sum, a) => sum + (a.timeSpent || 0), 0);
+    const totalCorrect = attempts.reduce((sum, a) => sum + a.correctAnswers, 0);
+    const totalWrong = attempts.reduce((sum, a) => sum + a.wrongAnswers, 0);
+    const totalUnanswered = attempts.reduce((sum, a) => sum + a.unanswered, 0);
+    const totalQuestionsSolved = totalCorrect + totalWrong + totalUnanswered;
+    const overallAccuracy = totalQuestionsSolved > 0
+      ? Math.round((totalCorrect / totalQuestionsSolved) * 100)
+      : 0;
+
+    // Per-exam breakdown (group by exam, show all attempts)
+    const examMap = {};
+    attempts.forEach((a) => {
+      const examId = a.exam?._id?.toString();
+      if (!examId) return;
+      if (!examMap[examId]) {
+        examMap[examId] = {
+          exam: {
+            _id: a.exam._id,
+            title: a.exam.title,
+            examType: a.exam.examType,
+            category: a.exam.category?.name || '',
+            subject: a.exam.subject?.name || '',
+            level: a.exam.level?.name || '',
+          },
+          attempts: [],
+          bestScore: 0,
+          averageScore: 0,
+        };
+      }
+      examMap[examId].attempts.push({
+        _id: a._id,
+        percentage: a.percentage,
+        isPassed: a.isPassed,
+        correctAnswers: a.correctAnswers,
+        wrongAnswers: a.wrongAnswers,
+        unanswered: a.unanswered,
+        timeSpent: a.timeSpent,
+        date: a.createdAt,
+      });
+      if (a.percentage > examMap[examId].bestScore) {
+        examMap[examId].bestScore = a.percentage;
+      }
+    });
+
+    // Calculate averages per exam
+    Object.values(examMap).forEach((e) => {
+      e.averageScore = Math.round(
+        e.attempts.reduce((s, a) => s + a.percentage, 0) / e.attempts.length
+      );
+      e.totalAttempts = e.attempts.length;
+    });
+
+    // Category-wise accuracy
+    const categoryMap = {};
+    attempts.forEach((a) => {
+      const catName = a.exam?.category?.name || 'Unknown';
+      if (!categoryMap[catName]) {
+        categoryMap[catName] = { correct: 0, total: 0, attempts: 0 };
+      }
+      categoryMap[catName].correct += a.correctAnswers;
+      categoryMap[catName].total += a.correctAnswers + a.wrongAnswers + a.unanswered;
+      categoryMap[catName].attempts++;
+    });
+
+    const categoryAccuracy = Object.entries(categoryMap).map(([name, data]) => ({
+      name,
+      accuracy: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+      totalAttempts: data.attempts,
+    }));
+
+    // Recent trend (last 10 attempts)
+    const recentTrend = attempts.slice(0, 10).map((a) => ({
+      examTitle: a.exam?.title || '',
+      percentage: a.percentage,
+      isPassed: a.isPassed,
+      date: a.createdAt,
+    }));
+
+    res.json({
+      overview: {
+        totalAttempts,
+        totalPassed,
+        totalFailed: totalAttempts - totalPassed,
+        avgPercentage,
+        overallAccuracy,
+        totalTimeSpent,
+        totalQuestionsSolved,
+        totalCorrect,
+        totalWrong,
+        totalUnanswered,
+      },
+      examBreakdown: Object.values(examMap),
+      categoryAccuracy,
+      recentTrend,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getExams,
   getExam,
@@ -416,4 +619,6 @@ module.exports = {
   submitExam,
   getExamHistory,
   getExamStats,
+  reviewAttempt,
+  getPerformanceReport,
 };

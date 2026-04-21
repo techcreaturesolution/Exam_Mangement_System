@@ -14,6 +14,8 @@ import 'screens/history_screen.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/subscriptions_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/exam_review_screen.dart';
+import 'screens/performance_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +50,8 @@ class ExamApp extends StatelessWidget {
               '/analytics': (ctx) => const AnalyticsScreen(),
               '/subscriptions': (ctx) => const SubscriptionsScreen(),
               '/settings': (ctx) => const SettingsScreen(),
+              '/exam-review': (ctx) => const ExamReviewScreen(),
+              '/performance': (ctx) => const PerformanceScreen(),
             },
           );
         },

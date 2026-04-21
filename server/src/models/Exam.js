@@ -88,6 +88,16 @@ const examSchema = new mongoose.Schema(
         ref: 'Question',
       },
     ],
+    isDemo: {
+      type: Boolean,
+      default: false,
+      comment: 'Demo exams are free for all users without payment',
+    },
+    allowReview: {
+      type: Boolean,
+      default: true,
+      comment: 'Allow students to review correct answers after submission',
+    },
     isActive: {
       type: Boolean,
       default: true,

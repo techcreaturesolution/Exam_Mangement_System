@@ -422,6 +422,7 @@ class _ProfilePage extends StatelessWidget {
 
             // Menu items
             _profileItem(Icons.history, 'Exam History', () => Navigator.pushNamed(context, '/history')),
+            _profileItem(Icons.bar_chart, 'Performance Report', () => Navigator.pushNamed(context, '/performance')),
             _profileItem(Icons.credit_card, 'My Subscriptions', () => Navigator.pushNamed(context, '/subscriptions')),
             _profileItem(Icons.analytics_outlined, 'Analytics', () => Navigator.pushNamed(context, '/analytics')),
             _profileItem(Icons.settings, 'Settings', () => Navigator.pushNamed(context, '/settings')),

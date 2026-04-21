@@ -19,6 +19,8 @@ class ApiConstants {
   // Exams
   static const String exams = '/exams';
   static const String examHistory = '/exams/history';
+  static const String examPerformance = '/exams/performance';
+  static const String examReview = '/exams/review'; // append /:attemptId
   
   // Questions
   static const String questions = '/questions';

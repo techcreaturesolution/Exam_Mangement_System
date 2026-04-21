@@ -113,9 +113,58 @@ class ResultScreen extends StatelessWidget {
               ],
 
               const SizedBox(height: 24),
+
+              // Review Paper Button
+              if (result['attemptId'] != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.rate_review),
+                    label: const Text('Review Exam Paper'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.navy,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pushNamed(context, '/exam-review', arguments: result['attemptId']),
+                  ),
+                ),
+              const SizedBox(height: 12),
+
+              // Performance Report Button
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.bar_chart),
+                  label: const Text('View Performance Report'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () => Navigator.pushNamed(context, '/performance'),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Retake Button
+              if (result['examId'] != null)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.replay),
+                    label: const Text('Retake Exam'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      foregroundColor: AppColors.orange,
+                    ),
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/exam-detail', arguments: result['examData']);
+                    },
+                  ),
+                ),
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
                   onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
                   child: const Text('Back to Home'),
                 ),

@@ -17,7 +17,7 @@ const Exams = () => {
     totalQuestions: 10, duration: 30, passingPercentage: 40,
     negativeMarking: false, shuffleQuestions: true,
     showResult: true, showAnswers: false, maxAttempts: 0,
-    instructions: '', isActive: true,
+    instructions: '', isActive: true, isDemo: false, allowReview: true,
   });
 
   useEffect(() => {
@@ -96,7 +96,8 @@ const Exams = () => {
       shuffleQuestions: exam.shuffleQuestions,
       showResult: exam.showResult, showAnswers: exam.showAnswers,
       maxAttempts: exam.maxAttempts, instructions: exam.instructions || '',
-      isActive: exam.isActive,
+      isActive: exam.isActive, isDemo: exam.isDemo || false,
+      allowReview: exam.allowReview !== false,
     });
     setEditId(exam._id);
     setShowModal(true);
@@ -122,7 +123,7 @@ const Exams = () => {
       totalQuestions: 10, duration: 30, passingPercentage: 40,
       negativeMarking: false, shuffleQuestions: true,
       showResult: true, showAnswers: false, maxAttempts: 0,
-      instructions: '', isActive: true,
+      instructions: '', isActive: true, isDemo: false, allowReview: true,
     });
   };
 
@@ -149,6 +150,8 @@ const Exams = () => {
                 <th>Level</th>
                 <th>Questions</th>
                 <th>Duration</th>
+                <th>Demo</th>
+                <th>Attempts</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -163,6 +166,8 @@ const Exams = () => {
                   <td><span className="badge" style={{ backgroundColor: exam.level?.color, color: '#fff' }}>{exam.level?.name}</span></td>
                   <td>{exam.totalQuestions}</td>
                   <td>{exam.duration} min</td>
+                  <td>{exam.isDemo ? <span className="badge" style={{ backgroundColor: '#10b981' }}>Free</span> : '-'}</td>
+                  <td>{exam.maxAttempts === 0 ? 'Unlimited' : exam.maxAttempts}</td>
                   <td><span className={`badge ${exam.isActive ? 'active' : 'inactive'}`}>{exam.isActive ? 'Active' : 'Inactive'}</span></td>
                   <td>
                     <div className="action-btns">
@@ -172,7 +177,7 @@ const Exams = () => {
                   </td>
                 </tr>
               ))}
-              {exams.length === 0 && <tr><td colSpan="9" className="text-center">No exams found</td></tr>}
+              {exams.length === 0 && <tr><td colSpan="11" className="text-center">No exams found</td></tr>}
             </tbody>
           </table>
         </div>
@@ -259,6 +264,14 @@ const Exams = () => {
                 <label className="checkbox-label">
                   <input type="checkbox" checked={form.showAnswers} onChange={(e) => setForm({ ...form, showAnswers: e.target.checked })} />
                   Show Answers
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={form.isDemo} onChange={(e) => setForm({ ...form, isDemo: e.target.checked })} />
+                  Demo Exam (Free)
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={form.allowReview} onChange={(e) => setForm({ ...form, allowReview: e.target.checked })} />
+                  Allow Paper Review
                 </label>
               </div>
               <div className="form-group">

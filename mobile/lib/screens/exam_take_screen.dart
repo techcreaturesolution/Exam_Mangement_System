@@ -246,6 +246,13 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
       });
 
       if (mounted) {
+        // Add attemptId, examId, and examData for review/retake
+        result['attemptId'] = _attempt?['_id'];
+        result['examId'] = _examData!['_id'];
+        result['examData'] = _examData;
+        result['totalQuestions'] = _questions.length;
+        result['skippedAnswers'] = result['unanswered'] ?? (_questions.length - _answers.length);
+        result['score'] = result['obtainedMarks'];
         Navigator.pushReplacementNamed(context, '/result', arguments: result);
       }
     } catch (e) {

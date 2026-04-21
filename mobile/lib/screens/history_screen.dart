@@ -33,44 +33,183 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Exam History')),
+      appBar: AppBar(
+        title: const Text('Exam History'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Performance Report',
+            onPressed: () => Navigator.pushNamed(context, '/performance'),
+          ),
+        ],
+      ),
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : _history.isEmpty
-          ? const Center(child: Text('No exam history yet'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _history.length,
-              itemBuilder: (ctx, i) {
-                final h = _history[i];
-                final isPassed = h['isPassed'] ?? false;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isPassed ? AppColors.success.withValues(alpha: 0.1) : AppColors.error.withValues(alpha: 0.1),
-                      child: Icon(
-                        isPassed ? Icons.check : Icons.close,
-                        color: isPassed ? AppColors.success : AppColors.error,
-                      ),
+          ? _buildEmptyState()
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _history.length,
+                itemBuilder: (ctx, i) => _buildHistoryCard(_history[i]),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+          const SizedBox(height: 16),
+          const Text('No exam history yet', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          const Text('Take an exam to see your history here',
+              style: TextStyle(color: AppColors.textLight, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(Map<String, dynamic> h) {
+    final isPassed = h['isPassed'] ?? false;
+    final percentage = (h['percentage'] ?? 0).toDouble();
+    final correct = h['correctAnswers'] ?? 0;
+    final wrong = h['wrongAnswers'] ?? 0;
+    final unanswered = h['unanswered'] ?? 0;
+    final total = correct + wrong + unanswered;
+    final attemptId = h['_id'];
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          if (attemptId != null) {
+            Navigator.pushNamed(context, '/exam-review', arguments: attemptId);
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: isPassed
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : AppColors.error.withValues(alpha: 0.1),
+                    child: Icon(
+                      isPassed ? Icons.check : Icons.close,
+                      color: isPassed ? AppColors.success : AppColors.error,
                     ),
-                    title: Text(h['exam']?['title'] ?? 'Exam', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(
-                      '${h['percentage']?.toStringAsFixed(1)}% • ${h['correctAnswers']}/${h['totalQuestions']} correct',
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(isPassed ? 'Passed' : 'Failed',
-                          style: TextStyle(color: isPassed ? AppColors.success : AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
-                        Text(_formatDate(h['createdAt']), style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                        Text(h['exam']?['title'] ?? 'Exam',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${h['exam']?['category']?['name'] ?? ''} • ${h['exam']?['subject']?['name'] ?? ''}',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('${percentage.toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: isPassed ? AppColors.success : AppColors.error,
+                          )),
+                      Text(isPassed ? 'Passed' : 'Failed',
+                          style: TextStyle(
+                            color: isPassed ? AppColors.success : AppColors.error,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          )),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Stats row
+              Row(
+                children: [
+                  _miniStat(Icons.check_circle, '$correct', AppColors.success),
+                  const SizedBox(width: 16),
+                  _miniStat(Icons.cancel, '$wrong', AppColors.error),
+                  const SizedBox(width: 16),
+                  _miniStat(Icons.skip_next, '$unanswered', AppColors.warning),
+                  const SizedBox(width: 16),
+                  _miniStat(Icons.quiz, '$total', AppColors.navy),
+                  const Spacer(),
+                  Text(_formatDate(h['createdAt']),
+                      style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.rate_review, size: 16),
+                      label: const Text('Review', style: TextStyle(fontSize: 13)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        foregroundColor: AppColors.navy,
+                      ),
+                      onPressed: () {
+                        if (attemptId != null) {
+                          Navigator.pushNamed(context, '/exam-review', arguments: attemptId);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.replay, size: 16),
+                      label: const Text('Retake', style: TextStyle(fontSize: 13)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        foregroundColor: AppColors.orange,
+                      ),
+                      onPressed: () {
+                        if (h['exam'] != null) {
+                          Navigator.pushNamed(context, '/exam-detail', arguments: h['exam']);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStat(IconData icon, String value, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 3),
+        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+      ],
     );
   }
 
