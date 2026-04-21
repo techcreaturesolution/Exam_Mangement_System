@@ -2,25 +2,15 @@ const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema(
   {
-    user: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    plan: {
+    planId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'PaymentPlan',
+      ref: 'Plan',
       required: true,
-    },
-    razorpayOrderId: {
-      type: String,
-      required: true,
-    },
-    razorpayPaymentId: {
-      type: String,
-    },
-    razorpaySignature: {
-      type: String,
     },
     amount: {
       type: Number,
@@ -30,13 +20,22 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       default: 'INR',
     },
+    gatewayId: {
+      type: String,
+    },
+    razorpayOrderId: {
+      type: String,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
+    razorpaySignature: {
+      type: String,
+    },
     status: {
       type: String,
       enum: ['created', 'paid', 'failed', 'refunded'],
       default: 'created',
-    },
-    expiresAt: {
-      type: Date,
     },
     receipt: {
       type: String,

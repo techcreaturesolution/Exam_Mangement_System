@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
+    mobile: {
+      type: String,
+      trim: true,
+    },
     password: {
       type: String,
       required: [true, 'Password is required'],
@@ -23,18 +27,10 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['master_admin', 'admin', 'user'],
-      default: 'user',
+      enum: ['admin', 'student'],
+      default: 'student',
     },
-    company: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Company',
-    },
-    phone: {
-      type: String,
-      trim: true,
-    },
-    avatar: {
+    profileImage: {
       type: String,
     },
     isActive: {

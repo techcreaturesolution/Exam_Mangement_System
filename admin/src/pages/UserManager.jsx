@@ -1,153 +1,103 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { toast } from 'react-toastify';
 
 const UserManager = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => { fetchUsers(); }, []);
 
   const fetchUsers = async () => {
     try {
-      const { data } = await api.get('/auth/users');
+      const params = {};
+      if (search) params.search = search;
+      const { data } = await api.get('/auth/users', { params });
       setUsers(data);
-    } catch (err) {
-      console.error('Failed to fetch users:', err);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      toast.error('Failed to fetch users');
+    } finally { setLoading(false); }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchUsers();
+  };
+
+  const toggleActive = async (userId, currentStatus) => {
+    try {
+      await api.put(`/auth/users/${userId}`, { isActive: !currentStatus });
+      toast.success(`User ${!currentStatus ? 'activated' : 'deactivated'}`);
+      fetchUsers();
+    } catch (error) {
+      toast.error('Failed to update user');
     }
   };
 
-  const getPlanBadge = (user) => {
-    if (!user.activePlan) return { label: 'Free', className: 'badge-muted' };
-    const name = user.activePlan.name || 'Active';
-    if (name.toLowerCase().includes('full') || name.toLowerCase().includes('all')) {
-      return { label: name, className: 'badge-primary' };
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this user permanently?')) return;
+    try {
+      await api.delete(`/auth/users/${id}`);
+      toast.success('User deleted');
+      fetchUsers();
+    } catch (error) {
+      toast.error('Failed to delete user');
     }
-    return { label: name, className: 'badge-success' };
   };
 
-  const filteredUsers = users.filter(u =>
-    u.name?.toLowerCase().includes(search.toLowerCase()) ||
-    u.email?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const handleView = (user) => {
-    setSelectedUser(user);
-    setShowModal(true);
-  };
-
-  if (loading) {
-    return <div className="loading"><div className="spinner"></div></div>;
-  }
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <div className="page">
       <div className="page-header">
-        <div>
-          <h1>User Manager</h1>
-          <p className="page-subtitle">{users.length} total users</p>
-        </div>
+        <h1>Student Management</h1>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
+          <input type="text" placeholder="Search by name, email, mobile..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 280 }} />
+          <button type="submit" className="btn btn-primary">Search</button>
+        </form>
       </div>
 
-      {/* Search */}
-      <div style={{ marginBottom: '1rem' }}>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Search users..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: 360 }}
-        />
-      </div>
-
-      {/* Users Table */}
-      <div className="card">
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Plan</th>
-                <th>Joined</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => {
-                const plan = getPlanBadge(user);
-                return (
-                  <tr key={user._id}>
-                    <td><strong>{user.name}</strong></td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`badge ${plan.className}`}>{plan.label}</span>
-                    </td>
-                    <td>{new Date(user.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="btn btn-sm btn-outline" onClick={() => handleView(user)}>View</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filteredUsers.length === 0 && (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>No users found</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* User Detail Modal */}
-      {showModal && selectedUser && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-            <div className="modal-header">
-              <h2>User Details</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div style={{ display: 'grid', gap: '0.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f0f0f0' }}>
-                  <span style={{ color: '#888' }}>Name</span>
-                  <strong>{selectedUser.name}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f0f0f0' }}>
-                  <span style={{ color: '#888' }}>Email</span>
-                  <span>{selectedUser.email}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f0f0f0' }}>
-                  <span style={{ color: '#888' }}>Role</span>
-                  <span className={`badge ${selectedUser.role === 'admin' ? 'badge-danger' : 'badge-primary'}`}>{selectedUser.role}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f0f0f0' }}>
-                  <span style={{ color: '#888' }}>Joined</span>
-                  <span>{new Date(selectedUser.createdAt).toLocaleDateString('en-IN')}</span>
-                </div>
-                {selectedUser.activePlan && (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid #f0f0f0' }}>
-                      <span style={{ color: '#888' }}>Plan</span>
-                      <strong style={{ color: '#1E3A6E' }}>{selectedUser.activePlan.name}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                      <span style={{ color: '#888' }}>Plan Expiry</span>
-                      <span>{new Date(selectedUser.activePlan.expiresAt).toLocaleDateString('en-IN')}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Mobile</th>
+            <th>Status</th>
+            <th>Active Plan</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user._id}>
+              <td>{user.name}</td>
+              <td>{user.email}</td>
+              <td>{user.mobile || '-'}</td>
+              <td>
+                <span className={`badge badge-${user.isActive ? 'active' : 'inactive'}`}>
+                  {user.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              <td>
+                {user.activeSubscription ? (
+                  <span className="badge badge-active">{user.activeSubscription.planName}</span>
+                ) : <span style={{ color: '#999' }}>None</span>}
+              </td>
+              <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+              <td>
+                <button className={`btn btn-sm ${user.isActive ? 'btn-warning' : 'btn-success'}`} onClick={() => toggleActive(user._id, user.isActive)}>
+                  {user.isActive ? 'Deactivate' : 'Activate'}
+                </button>
+                <button className="btn btn-sm btn-delete" onClick={() => handleDelete(user._id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+          {users.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center' }}>No students found</td></tr>}
+        </tbody>
+      </table>
     </div>
   );
 };

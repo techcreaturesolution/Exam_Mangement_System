@@ -15,8 +15,8 @@ import PaymentPlans from './pages/PaymentPlans';
 import PaymentHistory from './pages/PaymentHistory';
 import UserManager from './pages/UserManager';
 import Reports from './pages/Reports';
-import Companies from './pages/Companies';
 import Violations from './pages/Violations';
+import Settings from './pages/Settings';
 import './App.css';
 
 function App() {
@@ -34,17 +34,17 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="companies" element={<Companies />} />
+            <Route path="students" element={<UserManager />} />
             <Route path="categories" element={<Categories />} />
             <Route path="subjects" element={<Subjects />} />
             <Route path="levels" element={<Levels />} />
             <Route path="questions" element={<Questions />} />
             <Route path="exams" element={<Exams />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="violations" element={<Violations />} />
             <Route path="payment-plans" element={<PaymentPlans />} />
             <Route path="payment-history" element={<PaymentHistory />} />
-            <Route path="users" element={<UserManager />} />
-            <Route path="violations" element={<Violations />} />
-            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </Router>

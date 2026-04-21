@@ -2,18 +2,18 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const { protect, adminOnly } = require('../middleware/auth');
 const {
   getQuestions,
   getQuestion,
   createQuestion,
   updateQuestion,
   deleteQuestion,
-  bulkUploadQuestions,
+  importQuestions,
   getQuestionCount,
 } = require('../controllers/questionController');
-const { protect, adminOnly, companyScope } = require('../middleware/auth');
 
-// Multer config for file uploads
+// Multer config for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '../../uploads'));
@@ -22,30 +22,14 @@ const storage = multer.diskStorage({
     cb(null, `questions_${Date.now()}${path.extname(file.originalname)}`);
   },
 });
+const upload = multer({ storage });
 
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-      'text/csv',
-    ];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only Excel and CSV files are allowed'));
-    }
-  },
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-});
-
-router.get('/count', protect, companyScope, getQuestionCount);
-router.get('/', protect, adminOnly, companyScope, getQuestions);
+router.get('/count', protect, adminOnly, getQuestionCount);
+router.get('/', protect, adminOnly, getQuestions);
 router.get('/:id', protect, adminOnly, getQuestion);
-router.post('/', protect, adminOnly, companyScope, createQuestion);
+router.post('/', protect, adminOnly, createQuestion);
+router.post('/import', protect, adminOnly, upload.single('file'), importQuestions);
 router.put('/:id', protect, adminOnly, updateQuestion);
 router.delete('/:id', protect, adminOnly, deleteQuestion);
-router.post('/bulk-upload', protect, adminOnly, companyScope, upload.single('file'), bulkUploadQuestions);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect, adminOnly } = require('../middleware/auth');
 const {
   getExams,
   getExam,
@@ -9,24 +10,33 @@ const {
   startExam,
   submitExam,
   getExamHistory,
-  getExamStats,
   reviewAttempt,
   getPerformanceReport,
+  getResults,
+  getRankings,
+  getDashboardStats,
 } = require('../controllers/examController');
-const { protect, adminOnly, companyScope } = require('../middleware/auth');
 
-// Admin routes
-router.get('/stats', protect, adminOnly, companyScope, getExamStats);
-router.post('/', protect, adminOnly, companyScope, createExam);
-router.put('/:id', protect, adminOnly, companyScope, updateExam);
-router.delete('/:id', protect, adminOnly, companyScope, deleteExam);
+// Admin dashboard
+router.get('/dashboard', protect, adminOnly, getDashboardStats);
 
-// User routes
-router.get('/', protect, companyScope, getExams);
+// Reports
+router.get('/reports/results', protect, adminOnly, getResults);
+router.get('/reports/rankings', protect, adminOnly, getRankings);
+router.get('/reports/analytics', protect, getPerformanceReport);
+
+// Exam history & review (student)
 router.get('/history', protect, getExamHistory);
-router.get('/performance', protect, getPerformanceReport);
 router.get('/review/:attemptId', protect, reviewAttempt);
+
+// CRUD
+router.get('/', protect, getExams);
 router.get('/:id', protect, getExam);
+router.post('/', protect, adminOnly, createExam);
+router.put('/:id', protect, adminOnly, updateExam);
+router.delete('/:id', protect, adminOnly, deleteExam);
+
+// Start & submit exam
 router.post('/:id/start', protect, startExam);
 router.post('/:id/submit', protect, submitExam);
 

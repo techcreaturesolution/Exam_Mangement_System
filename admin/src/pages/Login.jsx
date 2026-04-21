@@ -18,22 +18,20 @@ const Login = () => {
       toast.success('Login successful!');
       navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || error.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-page">
+    <div className="login-container">
       <div className="login-card">
-        <div className="login-header">
-          <h1>Exam Portal</h1>
-          <p>Master Admin Panel</p>
-        </div>
+        <h1>Exam Admin Panel</h1>
+        <p>Sign in to manage your exam system</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email Address</label>
+            <label>Email</label>
             <input
               type="email"
               value={email}
@@ -52,7 +50,7 @@ const Login = () => {
               required
             />
           </div>
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>

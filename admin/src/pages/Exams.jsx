@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
-import { FiPlus, FiEdit2, FiTrash2, FiEye } from 'react-icons/fi';
 
 const Exams = () => {
   const [exams, setExams] = useState([]);
@@ -10,96 +9,71 @@ const Exams = () => {
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editId, setEditId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
-    title: '', description: '', examType: 'practice',
-    category: '', subject: '', level: '',
-    totalQuestions: 10, duration: 30, passingPercentage: 40,
-    negativeMarking: false, shuffleQuestions: true,
-    showResult: true, showAnswers: false, maxAttempts: 0,
-    instructions: '', isActive: true, isDemo: false, allowReview: true,
+    examTitle: '', description: '', categoryId: '', subjectId: '', levelId: '',
+    totalQuestions: 10, durationMinutes: 30, passingMarks: 40, negativeMarking: false,
+    randomQuestions: true, showResult: true, allowReview: true, maxAttempts: 0,
+    antiCheatEnabled: true, maxViolations: 3, isDemo: false,
+    startDate: '', endDate: '', instructions: '',
   });
 
-  useEffect(() => {
-    fetchExams();
-    fetchCategories();
-    fetchLevels();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  useEffect(() => {
-    if (form.category) fetchSubjectsByCategory(form.category);
-  }, [form.category]);
-
-  const fetchExams = async () => {
+  const fetchData = async () => {
     try {
-      const { data } = await api.get('/exams');
-      setExams(data);
+      const [examRes, catRes, subRes, levRes] = await Promise.all([
+        api.get('/exams'), api.get('/categories'), api.get('/subjects'), api.get('/levels'),
+      ]);
+      setExams(examRes.data);
+      setCategories(catRes.data);
+      setSubjects(subRes.data);
+      setLevels(levRes.data);
     } catch (error) {
-      toast.error('Error fetching exams');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const { data } = await api.get('/categories');
-      setCategories(data);
-    } catch (error) {
-      console.error('Error fetching categories');
-    }
-  };
-
-  const fetchSubjectsByCategory = async (categoryId) => {
-    try {
-      const { data } = await api.get(`/subjects?category=${categoryId}`);
-      setSubjects(data);
-    } catch (error) {
-      console.error('Error fetching subjects');
-    }
-  };
-
-  const fetchLevels = async () => {
-    try {
-      const { data } = await api.get('/levels');
-      setLevels(data);
-    } catch (error) {
-      console.error('Error fetching levels');
-    }
+      toast.error('Failed to fetch data');
+    } finally { setLoading(false); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editId) {
-        await api.put(`/exams/${editId}`, form);
+      const payload = { ...form };
+      if (!payload.startDate) delete payload.startDate;
+      if (!payload.endDate) delete payload.endDate;
+      if (!payload.levelId) delete payload.levelId;
+
+      if (editingId) {
+        await api.put(`/exams/${editingId}`, payload);
         toast.success('Exam updated');
       } else {
-        await api.post('/exams', form);
+        await api.post('/exams', payload);
         toast.success('Exam created');
       }
-      fetchExams();
-      closeModal();
+      setShowModal(false);
+      setEditingId(null);
+      fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error saving exam');
+      toast.error(error.response?.data?.message || 'Failed to save exam');
     }
   };
 
   const handleEdit = (exam) => {
     setForm({
-      title: exam.title, description: exam.description || '',
-      examType: exam.examType, category: exam.category?._id || '',
-      subject: exam.subject?._id || '', level: exam.level?._id || '',
-      totalQuestions: exam.totalQuestions, duration: exam.duration,
-      passingPercentage: exam.passingPercentage,
-      negativeMarking: exam.negativeMarking,
-      shuffleQuestions: exam.shuffleQuestions,
-      showResult: exam.showResult, showAnswers: exam.showAnswers,
-      maxAttempts: exam.maxAttempts, instructions: exam.instructions || '',
-      isActive: exam.isActive, isDemo: exam.isDemo || false,
-      allowReview: exam.allowReview !== false,
+      examTitle: exam.examTitle, description: exam.description || '',
+      categoryId: exam.categoryId?._id || exam.categoryId,
+      subjectId: exam.subjectId?._id || exam.subjectId,
+      levelId: exam.levelId?._id || exam.levelId || '',
+      totalQuestions: exam.totalQuestions, durationMinutes: exam.durationMinutes,
+      passingMarks: exam.passingMarks, negativeMarking: exam.negativeMarking,
+      randomQuestions: exam.randomQuestions, showResult: exam.showResult,
+      allowReview: exam.allowReview, maxAttempts: exam.maxAttempts || 0,
+      antiCheatEnabled: exam.antiCheatEnabled, maxViolations: exam.maxViolations,
+      isDemo: exam.isDemo || false,
+      startDate: exam.startDate ? exam.startDate.slice(0, 16) : '',
+      endDate: exam.endDate ? exam.endDate.slice(0, 16) : '',
+      instructions: exam.instructions || '',
     });
-    setEditId(exam._id);
+    setEditingId(exam._id);
     setShowModal(true);
   };
 
@@ -108,180 +82,143 @@ const Exams = () => {
     try {
       await api.delete(`/exams/${id}`);
       toast.success('Exam deleted');
-      fetchExams();
+      fetchData();
     } catch (error) {
-      toast.error('Error deleting exam');
+      toast.error('Failed to delete exam');
     }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setEditId(null);
-    setForm({
-      title: '', description: '', examType: 'practice',
-      category: '', subject: '', level: '',
-      totalQuestions: 10, duration: 30, passingPercentage: 40,
-      negativeMarking: false, shuffleQuestions: true,
-      showResult: true, showAnswers: false, maxAttempts: 0,
-      instructions: '', isActive: true, isDemo: false, allowReview: true,
-    });
-  };
+  const getFilteredSubjects = (catId) => subjects.filter(s => !catId || (s.categoryId?._id || s.categoryId) === catId);
 
-  if (loading) return <div className="loading"><div className="spinner"></div></div>;
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">Exams</h1>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <FiPlus /> Create Exam
+        <h1>Exam Management</h1>
+        <button className="btn btn-primary" onClick={() => { setEditingId(null); setForm({ examTitle: '', description: '', categoryId: '', subjectId: '', levelId: '', totalQuestions: 10, durationMinutes: 30, passingMarks: 40, negativeMarking: false, randomQuestions: true, showResult: true, allowReview: true, maxAttempts: 0, antiCheatEnabled: true, maxViolations: 3, isDemo: false, startDate: '', endDate: '', instructions: '' }); setShowModal(true); }}>
+          + Create Exam
         </button>
       </div>
 
-      <div className="card">
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Category</th>
-                <th>Subject</th>
-                <th>Level</th>
-                <th>Questions</th>
-                <th>Duration</th>
-                <th>Demo</th>
-                <th>Attempts</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exams.map((exam) => (
-                <tr key={exam._id}>
-                  <td><strong>{exam.title}</strong></td>
-                  <td><span className={`badge ${exam.examType}`}>{exam.examType}</span></td>
-                  <td>{exam.category?.name || '-'}</td>
-                  <td>{exam.subject?.name || '-'}</td>
-                  <td><span className="badge" style={{ backgroundColor: exam.level?.color, color: '#fff' }}>{exam.level?.name}</span></td>
-                  <td>{exam.totalQuestions}</td>
-                  <td>{exam.duration} min</td>
-                  <td>{exam.isDemo ? <span className="badge" style={{ backgroundColor: '#10b981' }}>Free</span> : '-'}</td>
-                  <td>{exam.maxAttempts === 0 ? 'Unlimited' : exam.maxAttempts}</td>
-                  <td><span className={`badge ${exam.isActive ? 'active' : 'inactive'}`}>{exam.isActive ? 'Active' : 'Inactive'}</span></td>
-                  <td>
-                    <div className="action-btns">
-                      <button className="btn btn-sm btn-edit" onClick={() => handleEdit(exam)}><FiEdit2 /></button>
-                      <button className="btn btn-sm btn-delete" onClick={() => handleDelete(exam._id)}><FiTrash2 /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {exams.length === 0 && <tr><td colSpan="11" className="text-center">No exams found</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Exam Title</th>
+            <th>Category</th>
+            <th>Subject</th>
+            <th>Questions</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Demo</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {exams.map((exam) => (
+            <tr key={exam._id}>
+              <td>{exam.examTitle}</td>
+              <td>{exam.categoryId?.categoryName || '-'}</td>
+              <td>{exam.subjectId?.subjectName || '-'}</td>
+              <td>{exam.totalQuestions}</td>
+              <td>{exam.durationMinutes} min</td>
+              <td><span className={`badge badge-${exam.status}`}>{exam.status}</span></td>
+              <td>{exam.isDemo ? <span className="badge badge-demo">FREE</span> : '-'}</td>
+              <td>
+                <button className="btn btn-sm btn-edit" onClick={() => handleEdit(exam)}>Edit</button>
+                <button className="btn btn-sm btn-delete" onClick={() => handleDelete(exam._id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+          {exams.length === 0 && <tr><td colSpan="8" style={{ textAlign: 'center' }}>No exams found</td></tr>}
+        </tbody>
+      </table>
 
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
-            <h2>{editId ? 'Edit Exam' : 'Create Exam'}</h2>
+            <h2>{editingId ? 'Edit Exam' : 'Create Exam'}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label>Exam Title *</label>
-                <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+                <label>Exam Title</label>
+                <input type="text" value={form.examTitle} onChange={(e) => setForm({ ...form, examTitle: e.target.value })} required />
               </div>
               <div className="form-group">
                 <label>Description</label>
                 <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
               </div>
-              <div className="form-row">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div className="form-group">
-                  <label>Exam Type *</label>
-                  <select value={form.examType} onChange={(e) => setForm({ ...form, examType: e.target.value })}>
-                    <option value="practice">Practice Exam</option>
-                    <option value="mock">Mock Exam</option>
+                  <label>Category</label>
+                  <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value, subjectId: '' })} required>
+                    <option value="">Select</option>
+                    {categories.map(c => <option key={c._id} value={c._id}>{c.categoryName}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Category *</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value, subject: '' })} required>
+                  <label>Subject</label>
+                  <select value={form.subjectId} onChange={(e) => setForm({ ...form, subjectId: e.target.value })} required>
                     <option value="">Select</option>
-                    {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                    {getFilteredSubjects(form.categoryId).map(s => <option key={s._id} value={s._id}>{s.subjectName}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Level (optional)</label>
+                  <select value={form.levelId} onChange={(e) => setForm({ ...form, levelId: e.target.value })}>
+                    <option value="">Any Level</option>
+                    {levels.map(l => <option key={l._id} value={l._id}>{l.levelName}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="form-row">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
                 <div className="form-group">
-                  <label>Subject *</label>
-                  <select value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required>
-                    <option value="">Select</option>
-                    {subjects.map((s) => <option key={s._id} value={s._id}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Level *</label>
-                  <select value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} required>
-                    <option value="">Select</option>
-                    {levels.map((l) => <option key={l._id} value={l._id}>{l.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Total Questions *</label>
+                  <label>Total Questions</label>
                   <input type="number" value={form.totalQuestions} onChange={(e) => setForm({ ...form, totalQuestions: parseInt(e.target.value) })} min={1} required />
                 </div>
                 <div className="form-group">
-                  <label>Duration (minutes) *</label>
-                  <input type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: parseInt(e.target.value) })} min={1} required />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Passing Percentage (%)</label>
-                  <input type="number" value={form.passingPercentage} onChange={(e) => setForm({ ...form, passingPercentage: parseInt(e.target.value) })} min={0} max={100} />
+                  <label>Duration (minutes)</label>
+                  <input type="number" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: parseInt(e.target.value) })} min={1} required />
                 </div>
                 <div className="form-group">
-                  <label>Max Attempts (0 = unlimited)</label>
+                  <label>Passing Marks (%)</label>
+                  <input type="number" value={form.passingMarks} onChange={(e) => setForm({ ...form, passingMarks: parseInt(e.target.value) })} min={0} max={100} />
+                </div>
+                <div className="form-group">
+                  <label>Max Attempts (0=unlimited)</label>
                   <input type="number" value={form.maxAttempts} onChange={(e) => setForm({ ...form, maxAttempts: parseInt(e.target.value) })} min={0} />
                 </div>
               </div>
-              <div className="form-row checkboxes">
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={form.negativeMarking} onChange={(e) => setForm({ ...form, negativeMarking: e.target.checked })} />
-                  Negative Marking
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={form.shuffleQuestions} onChange={(e) => setForm({ ...form, shuffleQuestions: e.target.checked })} />
-                  Shuffle Questions
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={form.showResult} onChange={(e) => setForm({ ...form, showResult: e.target.checked })} />
-                  Show Result
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={form.showAnswers} onChange={(e) => setForm({ ...form, showAnswers: e.target.checked })} />
-                  Show Answers
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={form.isDemo} onChange={(e) => setForm({ ...form, isDemo: e.target.checked })} />
-                  Demo Exam (Free)
-                </label>
-                <label className="checkbox-label">
-                  <input type="checkbox" checked={form.allowReview} onChange={(e) => setForm({ ...form, allowReview: e.target.checked })} />
-                  Allow Paper Review
-                </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-group">
+                  <label>Start Date (optional)</label>
+                  <input type="datetime-local" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>End Date (optional)</label>
+                  <input type="datetime-local" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+                </div>
               </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, margin: '12px 0' }}>
+                <label><input type="checkbox" checked={form.randomQuestions} onChange={(e) => setForm({ ...form, randomQuestions: e.target.checked })} /> Random Questions</label>
+                <label><input type="checkbox" checked={form.negativeMarking} onChange={(e) => setForm({ ...form, negativeMarking: e.target.checked })} /> Negative Marking</label>
+                <label><input type="checkbox" checked={form.showResult} onChange={(e) => setForm({ ...form, showResult: e.target.checked })} /> Show Result</label>
+                <label><input type="checkbox" checked={form.allowReview} onChange={(e) => setForm({ ...form, allowReview: e.target.checked })} /> Allow Review</label>
+                <label><input type="checkbox" checked={form.isDemo} onChange={(e) => setForm({ ...form, isDemo: e.target.checked })} /> Demo (Free)</label>
+                <label><input type="checkbox" checked={form.antiCheatEnabled} onChange={(e) => setForm({ ...form, antiCheatEnabled: e.target.checked })} /> Anti-Cheat</label>
+              </div>
+              {form.antiCheatEnabled && (
+                <div className="form-group">
+                  <label>Max Violations Before Auto-Submit</label>
+                  <input type="number" value={form.maxViolations} onChange={(e) => setForm({ ...form, maxViolations: parseInt(e.target.value) })} min={1} />
+                </div>
+              )}
               <div className="form-group">
                 <label>Instructions</label>
-                <textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} rows={3}
-                  placeholder="Enter exam instructions for students..." />
+                <textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} rows={3} />
               </div>
               <div className="modal-actions">
-                <button type="button" className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editId ? 'Update' : 'Create'}</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary">{editingId ? 'Update' : 'Create'}</button>
               </div>
             </form>
           </div>

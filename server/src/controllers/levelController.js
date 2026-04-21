@@ -4,7 +4,7 @@ const Level = require('../models/Level');
 // @route   GET /api/levels
 const getLevels = async (req, res) => {
   try {
-    const levels = await Level.find().sort({ order: 1 });
+    const levels = await Level.find().sort({ sortOrder: 1 });
     res.json(levels);
   } catch (error) {
     res.status(500).json({ message: error.message });

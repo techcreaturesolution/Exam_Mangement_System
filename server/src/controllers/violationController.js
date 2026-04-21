@@ -1,4 +1,4 @@
-const ExamViolation = require('../models/ExamViolation');
+const Violation = require('../models/ExamViolation');
 const ExamAttempt = require('../models/ExamAttempt');
 const Exam = require('../models/Exam');
 
@@ -6,36 +6,37 @@ const Exam = require('../models/Exam');
 // @route   POST /api/violations
 const reportViolation = async (req, res) => {
   try {
-    const { examId, attemptId, violationType, description } = req.body;
+    const { examId, attemptId, type, description } = req.body;
 
     const exam = await Exam.findById(examId);
     if (!exam) {
       return res.status(404).json({ message: 'Exam not found' });
     }
 
-    const violation = await ExamViolation.create({
-      user: req.user._id,
-      exam: examId,
+    const violation = await Violation.create({
+      userId: req.user._id,
+      examId,
       attemptId,
-      violationType,
+      type,
       description,
-      company: exam.company,
     });
 
-    // Check if max violations exceeded
-    const violationCount = await ExamViolation.countDocuments({
-      user: req.user._id,
+    // Count violations for this attempt
+    const violationCount = await Violation.countDocuments({
+      userId: req.user._id,
       attemptId,
     });
+
+    // Update attempt violation count
+    await ExamAttempt.findByIdAndUpdate(attemptId, { violations: violationCount });
 
     let autoSubmitted = false;
-    if (exam.antiCheat.autoSubmitOnViolation && violationCount >= exam.antiCheat.maxViolations) {
-      // Auto-submit the exam
+    if (exam.antiCheatEnabled && violationCount >= exam.maxViolations) {
       const attempt = await ExamAttempt.findById(attemptId);
       if (attempt && attempt.status === 'in_progress') {
-        attempt.status = 'completed';
-        attempt.endTime = new Date();
-        attempt.timeSpent = Math.round((attempt.endTime - attempt.startTime) / 1000);
+        attempt.status = 'auto_submitted';
+        attempt.submittedAt = new Date();
+        attempt.timeSpent = Math.round((attempt.submittedAt - attempt.startedAt) / 1000);
         await attempt.save();
         autoSubmitted = true;
       }
@@ -44,46 +45,42 @@ const reportViolation = async (req, res) => {
     res.status(201).json({
       violation,
       totalViolations: violationCount,
-      maxViolations: exam.antiCheat.maxViolations,
+      maxViolations: exam.maxViolations,
       autoSubmitted,
-      warning: exam.antiCheat.warningMessage,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get violations for an attempt (admin)
+// @desc    Get violations for an attempt
 // @route   GET /api/violations/attempt/:attemptId
 const getAttemptViolations = async (req, res) => {
   try {
-    const violations = await ExamViolation.find({ attemptId: req.params.attemptId })
-      .populate('user', 'name email')
-      .populate('exam', 'title')
-      .sort({ timestamp: 1 });
+    const violations = await Violation.find({ attemptId: req.params.attemptId })
+      .populate('userId', 'name email')
+      .populate('examId', 'examTitle')
+      .sort({ createdAt: 1 });
     res.json(violations);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get violations for company (admin)
+// @desc    Get all violations (admin)
 // @route   GET /api/violations
 const getViolations = async (req, res) => {
   try {
     const filter = {};
-    if (req.companyFilter && req.companyFilter.company) {
-      filter.company = req.companyFilter.company;
-    }
-    if (req.query.examId) filter.exam = req.query.examId;
-    if (req.query.userId) filter.user = req.query.userId;
-    if (req.query.violationType) filter.violationType = req.query.violationType;
+    if (req.query.examId) filter.examId = req.query.examId;
+    if (req.query.userId) filter.userId = req.query.userId;
+    if (req.query.type) filter.type = req.query.type;
 
-    const violations = await ExamViolation.find(filter)
-      .populate('user', 'name email')
-      .populate('exam', 'title')
+    const violations = await Violation.find(filter)
+      .populate('userId', 'name email')
+      .populate('examId', 'examTitle')
       .sort({ createdAt: -1 })
-      .limit(100);
+      .limit(200);
 
     res.json(violations);
   } catch (error) {

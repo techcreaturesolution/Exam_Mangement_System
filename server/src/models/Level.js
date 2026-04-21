@@ -2,19 +2,15 @@ const mongoose = require('mongoose');
 
 const levelSchema = new mongoose.Schema(
   {
-    name: {
+    levelName: {
       type: String,
       required: [true, 'Level name is required'],
       trim: true,
-      enum: ['easy', 'medium', 'hard', 'expert'],
     },
-    description: {
-      type: String,
-      trim: true,
-    },
-    order: {
+    sortOrder: {
       type: Number,
       required: true,
+      default: 0,
     },
     color: {
       type: String,

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema(
   {
-    name: {
+    categoryName: {
       type: String,
       required: [true, 'Category name is required'],
       trim: true,
@@ -10,17 +10,6 @@ const categorySchema = new mongoose.Schema(
     description: {
       type: String,
       trim: true,
-    },
-    examType: {
-      type: String,
-      enum: ['practice', 'mock', 'both'],
-      required: [true, 'Exam type is required'],
-      default: 'both',
-    },
-    company: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Company',
-      required: [true, 'Company is required'],
     },
     icon: {
       type: String,

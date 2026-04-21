@@ -108,14 +108,13 @@ class _HomePageState extends State<_HomePage> {
                             children: [
                               Text('Hi, ${user?['name'] ?? 'Student'}!',
                                 style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                              if (user?['company']?['name'] != null)
-                                Text(user!['company']['name'], style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                              const Text('Welcome to TestBharti', style: TextStyle(color: Colors.white70, fontSize: 13)),
                             ],
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                          onPressed: () {},
+                          onPressed: () => Navigator.pushNamed(context, '/notifications'),
                         ),
                       ],
                     ),
@@ -147,12 +146,12 @@ class _HomePageState extends State<_HomePage> {
                     children: [
                       const Icon(Icons.star, color: Colors.white, size: 40),
                       const SizedBox(width: 12),
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Free Demo Available!', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                            const Text('Try practice exams for free', style: TextStyle(color: Colors.white70)),
+                            Text('Free Demo Available!', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            Text('Try practice exams for free', style: TextStyle(color: Colors.white70)),
                           ],
                         ),
                       ),
@@ -167,9 +166,9 @@ class _HomePageState extends State<_HomePage> {
               ),
 
               // Categories
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: const Text('Featured Topics', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('Featured Topics', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               ),
               const SizedBox(height: 12),
 
@@ -192,11 +191,10 @@ class _HomePageState extends State<_HomePage> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.navy.withValues(alpha: 0.1),
+                          backgroundColor: AppColors.navy.withOpacity(0.1),
                           child: const Icon(Icons.book, color: AppColors.navy),
                         ),
-                        title: Text(cat['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(cat['examType'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        title: Text(cat['categoryName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
                         trailing: const Icon(Icons.chevron_right, color: AppColors.textLight),
                         onTap: () => Navigator.pushNamed(context, '/subjects', arguments: cat),
                       ),
@@ -217,7 +215,7 @@ class _HomePageState extends State<_HomePage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -253,7 +251,7 @@ class _PracticePageState extends State<_PracticePage> {
 
   Future<void> _load() async {
     try {
-      final cats = await _api.get(ApiConstants.categories, params: {'examType': 'practice'});
+      final cats = await _api.get(ApiConstants.categories);
       setState(() { _categories = cats; _loading = false; });
     } catch (e) {
       setState(() => _loading = false);
@@ -263,11 +261,11 @@ class _PracticePageState extends State<_PracticePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Practice'), centerTitle: true),
+      appBar: AppBar(title: const Text('Practice')),
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : _categories.isEmpty
-          ? const Center(child: Text('No practice categories available'))
+          ? const Center(child: Text('No categories available'))
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _categories.length,
@@ -277,11 +275,10 @@ class _PracticePageState extends State<_PracticePage> {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppColors.navy.withValues(alpha: 0.1),
+                      backgroundColor: AppColors.navy.withOpacity(0.1),
                       child: const Icon(Icons.book, color: AppColors.navy),
                     ),
-                    title: Text(cat['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(cat['description'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                    title: Text(cat['categoryName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.pushNamed(context, '/subjects', arguments: cat),
                   ),
@@ -312,7 +309,7 @@ class _TestsPageState extends State<_TestsPage> {
 
   Future<void> _load() async {
     try {
-      final exams = await _api.get(ApiConstants.exams, params: {'examType': 'mock'});
+      final exams = await _api.get(ApiConstants.exams);
       setState(() { _exams = exams; _loading = false; });
     } catch (e) {
       setState(() => _loading = false);
@@ -322,61 +319,60 @@ class _TestsPageState extends State<_TestsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mock Tests'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('All Exams'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Exam History',
+            onPressed: () => Navigator.pushNamed(context, '/history'),
+          ),
+        ],
+      ),
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : _exams.isEmpty
-          ? const Center(child: Text('No mock tests available'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _exams.length,
-              itemBuilder: (ctx, i) {
-                final exam = _exams[i];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => Navigator.pushNamed(context, '/exam-detail', arguments: exam),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+          ? const Center(child: Text('No exams available'))
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _exams.length,
+                itemBuilder: (ctx, i) {
+                  final exam = _exams[i];
+                  final isDemo = exam['isDemo'] == true;
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: isDemo ? AppColors.success.withOpacity(0.1) : AppColors.orange.withOpacity(0.1),
+                        child: Icon(Icons.assignment, color: isDemo ? AppColors.success : AppColors.orange),
+                      ),
+                      title: Text(exam['examTitle'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Row(
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.orange.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text('MOCK', style: TextStyle(color: AppColors.orange, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text('${exam['durationMinutes'] ?? 0} min', style: const TextStyle(fontSize: 12)),
+                          const SizedBox(width: 8),
+                          Text('${exam['totalQuestions'] ?? 0} Q', style: const TextStyle(fontSize: 12)),
+                          if (isDemo) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(4),
                               ),
-                              const Spacer(),
-                              Icon(Icons.timer, size: 16, color: AppColors.textSecondary),
-                              const SizedBox(width: 4),
-                              Text('${exam['duration']} min', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(exam['title'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 4),
-                          Text('${exam['totalQuestions']} Questions  •  ${exam['totalMarks']} Marks',
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pushNamed(context, '/exam-detail', arguments: exam),
-                              child: const Text('Start Test'),
+                              child: const Text('FREE', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
                             ),
-                          ),
+                          ],
                         ],
                       ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.pushNamed(context, '/exam-detail', arguments: exam),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
     );
   }
@@ -390,61 +386,88 @@ class _ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile'), centerTitle: true),
+      appBar: AppBar(title: const Text('Profile')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Avatar
             CircleAvatar(
-              radius: 50,
-              backgroundColor: AppColors.navy,
+              radius: 40,
+              backgroundColor: AppColors.orange,
               child: Text(
                 (user?['name'] ?? 'U')[0].toUpperCase(),
-                style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
             const SizedBox(height: 12),
-            Text(user?['name'] ?? '', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(user?['name'] ?? 'Student', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             Text(user?['email'] ?? '', style: const TextStyle(color: AppColors.textSecondary)),
-            if (user?['company']?['name'] != null) ...[
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.navy.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(user!['company']['name'], style: const TextStyle(color: AppColors.navy, fontSize: 12)),
-              ),
-            ],
             const SizedBox(height: 24),
-
-            // Menu items
-            _profileItem(Icons.history, 'Exam History', () => Navigator.pushNamed(context, '/history')),
-            _profileItem(Icons.bar_chart, 'Performance Report', () => Navigator.pushNamed(context, '/performance')),
-            _profileItem(Icons.credit_card, 'My Subscriptions', () => Navigator.pushNamed(context, '/subscriptions')),
-            _profileItem(Icons.analytics_outlined, 'Analytics', () => Navigator.pushNamed(context, '/analytics')),
-            _profileItem(Icons.settings, 'Settings', () => Navigator.pushNamed(context, '/settings')),
-            const Divider(height: 32),
-            _profileItem(Icons.logout, 'Logout', () async {
-              await context.read<AuthProvider>().logout();
-              if (context.mounted) Navigator.pushReplacementNamed(context, '/login');
-            }, color: AppColors.error),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.person, color: AppColors.navy),
+                    title: const Text('Edit Profile'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/profile'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.subscriptions, color: AppColors.navy),
+                    title: const Text('My Subscriptions'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/subscriptions'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.history, color: AppColors.navy),
+                    title: const Text('Exam History'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/history'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.analytics, color: AppColors.navy),
+                    title: const Text('Analytics'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/analytics'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.notifications, color: AppColors.navy),
+                    title: const Text('Notifications'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/notifications'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.support_agent, color: AppColors.navy),
+                    title: const Text('Support / Contact Us'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/support'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.settings, color: AppColors.navy),
+                    title: const Text('Settings'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.pushNamed(context, '/settings'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: AppColors.error),
+                    title: const Text('Logout', style: TextStyle(color: AppColors.error)),
+                    onTap: () {
+                      context.read<AuthProvider>().logout();
+                      Navigator.pushReplacementNamed(context, '/login');
+                    },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _profileItem(IconData icon, String title, VoidCallback onTap, {Color? color}) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(icon, color: color ?? AppColors.navy),
-        title: Text(title, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
-        trailing: Icon(Icons.chevron_right, color: color ?? AppColors.textLight),
-        onTap: onTap,
       ),
     );
   }

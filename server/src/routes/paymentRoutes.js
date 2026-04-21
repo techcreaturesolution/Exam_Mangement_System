@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect, adminOnly } = require('../middleware/auth');
 const {
   getPlans,
   getPlan,
@@ -8,30 +9,23 @@ const {
   deletePlan,
   createOrder,
   verifyPayment,
-  getMySubscriptions,
-  getMyPayments,
+  getMySubscription,
+  getPaymentHistory,
   checkAccess,
-  getAllPayments,
 } = require('../controllers/paymentController');
-const { protect, adminOnly } = require('../middleware/auth');
 
-// Public - get active plans
-router.get('/plans', getPlans);
-router.get('/plans/:id', getPlan);
-
-// Admin - manage plans
+// Plan management (admin)
+router.get('/plans', protect, getPlans);
+router.get('/plans/:id', protect, getPlan);
 router.post('/plans', protect, adminOnly, createPlan);
 router.put('/plans/:id', protect, adminOnly, updatePlan);
 router.delete('/plans/:id', protect, adminOnly, deletePlan);
 
-// Admin - view all payments
-router.get('/all', protect, adminOnly, getAllPayments);
-
-// User - payment flow
+// Payment operations
 router.post('/create-order', protect, createOrder);
 router.post('/verify', protect, verifyPayment);
-router.get('/my-subscriptions', protect, getMySubscriptions);
-router.get('/my-payments', protect, getMyPayments);
-router.get('/check-access/:examId', protect, checkAccess);
+router.get('/my-subscription', protect, getMySubscription);
+router.get('/check-access', protect, checkAccess);
+router.get('/history', protect, getPaymentHistory);
 
 module.exports = router;

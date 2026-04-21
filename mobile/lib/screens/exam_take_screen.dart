@@ -20,7 +20,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
   Map<String, dynamic>? _examInfo;
   
   int _currentIndex = 0;
-  final Map<int, int> _answers = {};
+  final Map<int, String> _answers = {}; // index -> 'A', 'B', 'C', 'D'
   final Set<int> _flagged = {};
   
   Timer? _timer;
@@ -30,11 +30,8 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
   int _violationCount = 0;
   
   // Anti-cheat settings
-  bool _preventScreenshot = false;
-  bool _preventAppSwitch = false;
-  bool _autoSubmitOnViolation = false;
+  bool _antiCheatEnabled = false;
   int _maxViolations = 3;
-  String _warningMessage = '';
 
   @override
   void initState() {
@@ -55,7 +52,6 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
-    // Re-enable screenshots when leaving exam
     _disableSecurityFeatures();
     super.dispose();
   }
@@ -64,16 +60,15 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      if (_preventAppSwitch && !_submitting) {
-        _reportViolation('app_switch', 'User switched away from the app');
+      if (_antiCheatEnabled && !_submitting) {
+        _reportViolation('app_switch');
       }
     }
   }
 
   Future<void> _enableSecurityFeatures() async {
     try {
-      if (_preventScreenshot) {
-        // Prevent screenshots using platform channel
+      if (_antiCheatEnabled) {
         await SystemChannels.platform.invokeMethod('SystemChrome.setEnabledSystemUIMode', 'immersive');
       }
     } catch (e) {
@@ -89,30 +84,25 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
     }
   }
 
-  Future<void> _reportViolation(String type, String description) async {
+  Future<void> _reportViolation(String type) async {
     setState(() => _violationCount++);
     
     try {
       final result = await _api.post('/violations', body: {
         'examId': _examInfo?['_id'],
         'attemptId': _attempt?['_id'],
-        'violationType': type,
-        'description': description,
+        'type': type,
       });
       
       if (result['autoSubmitted'] == true) {
-        if (mounted) {
-          _showAutoSubmitDialog();
-        }
+        if (mounted) _showAutoSubmitDialog();
         return;
       }
     } catch (e) {
       // Continue even if violation reporting fails
     }
 
-    if (mounted) {
-      _showViolationWarning();
-    }
+    if (mounted) _showViolationWarning();
   }
 
   void _showViolationWarning() {
@@ -131,13 +121,12 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(_warningMessage.isNotEmpty ? _warningMessage : 'Switching apps during the exam is not allowed.'),
+            const Text('Switching apps during the exam is not allowed.'),
             const SizedBox(height: 12),
             Text('Violations: $_violationCount / $_maxViolations',
               style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
-            if (_autoSubmitOnViolation)
-              Text('Your exam will be auto-submitted after $_maxViolations violations.',
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            Text('Your exam will be auto-submitted after $_maxViolations violations.',
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           ],
         ),
         actions: [
@@ -182,18 +171,14 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
       
       setState(() {
         _attempt = data['attempt'];
-        _examInfo = data['exam'];
+        _examInfo = data['exam'] ?? _examData;
         _questions = data['questions'] ?? [];
-        _remainingSeconds = (data['exam']?['duration'] ?? 30) * 60;
+        _remainingSeconds = (_examInfo?['durationMinutes'] ?? 30) * 60;
         _loading = false;
         
-        // Set anti-cheat settings
-        final antiCheat = data['exam']?['antiCheat'] ?? {};
-        _preventScreenshot = antiCheat['preventScreenshot'] ?? false;
-        _preventAppSwitch = antiCheat['preventAppSwitch'] ?? false;
-        _autoSubmitOnViolation = antiCheat['autoSubmitOnViolation'] ?? false;
-        _maxViolations = antiCheat['maxViolations'] ?? 3;
-        _warningMessage = antiCheat['warningMessage'] ?? '';
+        // Anti-cheat settings
+        _antiCheatEnabled = _examInfo?['antiCheatEnabled'] ?? false;
+        _maxViolations = _examInfo?['maxViolations'] ?? 3;
       });
       
       _enableSecurityFeatures();
@@ -235,8 +220,8 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
     try {
       final answers = _questions.asMap().entries.map((e) {
         return {
-          'question': e.value['_id'],
-          'selectedOption': _answers[e.key] ?? -1,
+          'questionId': e.value['_id'],
+          'selectedOption': _answers[e.key] ?? '',
         };
       }).toList();
 
@@ -246,13 +231,12 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
       });
 
       if (mounted) {
-        // Add attemptId, examId, and examData for review/retake
         result['attemptId'] = _attempt?['_id'];
         result['examId'] = _examData!['_id'];
         result['examData'] = _examData;
         result['totalQuestions'] = _questions.length;
         result['skippedAnswers'] = result['unanswered'] ?? (_questions.length - _answers.length);
-        result['score'] = result['obtainedMarks'];
+        result['score'] = result['obtainedMarks'] ?? result['score'];
         Navigator.pushReplacementNamed(context, '/result', arguments: result);
       }
     } catch (e) {
@@ -298,7 +282,13 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
     }
 
     final question = _questions[_currentIndex];
-    final options = question['options'] as List<dynamic>? ?? [];
+    // Build options from optionA/B/C/D fields
+    final options = <Map<String, String>>[
+      {'key': 'A', 'text': question['optionA']?.toString() ?? ''},
+      {'key': 'B', 'text': question['optionB']?.toString() ?? ''},
+      {'key': 'C', 'text': question['optionC']?.toString() ?? ''},
+      {'key': 'D', 'text': question['optionD']?.toString() ?? ''},
+    ];
     final isTimeLow = _remainingSeconds < 60;
 
     return PopScope(
@@ -320,7 +310,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isTimeLow ? AppColors.error : Colors.white.withValues(alpha: 0.2),
+                color: isTimeLow ? AppColors.error : Colors.white.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -352,7 +342,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                color: AppColors.error.withValues(alpha: 0.1),
+                color: AppColors.error.withOpacity(0.1),
                 child: Row(
                   children: [
                     const Icon(Icons.shield, size: 14, color: AppColors.error),
@@ -405,24 +395,22 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
                     const SizedBox(height: 16),
 
                     Text(
-                      question['questionText'] ?? '',
+                      question['question'] ?? '',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500, height: 1.5),
                     ),
                     const SizedBox(height: 24),
 
-                    // Options
-                    ...options.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final opt = entry.value;
-                      final isSelected = _answers[_currentIndex] == idx;
+                    // Options A, B, C, D
+                    ...options.map((opt) {
+                      final isSelected = _answers[_currentIndex] == opt['key'];
                       return GestureDetector(
-                        onTap: () => setState(() => _answers[_currentIndex] = idx),
+                        onTap: () => setState(() => _answers[_currentIndex] = opt['key']!),
                         child: Container(
                           width: double.infinity,
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.navy.withValues(alpha: 0.08) : Colors.white,
+                            color: isSelected ? AppColors.navy.withOpacity(0.08) : Colors.white,
                             border: Border.all(
                               color: isSelected ? AppColors.navy : AppColors.border,
                               width: isSelected ? 2 : 1,
@@ -432,24 +420,22 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
                           child: Row(
                             children: [
                               Container(
-                                width: 28, height: 28,
+                                width: 32, height: 32,
                                 decoration: BoxDecoration(
+                                  color: isSelected ? AppColors.navy : AppColors.background,
                                   shape: BoxShape.circle,
-                                  color: isSelected ? AppColors.navy : Colors.transparent,
-                                  border: Border.all(
-                                    color: isSelected ? AppColors.navy : AppColors.textLight,
-                                    width: 2,
-                                  ),
+                                  border: Border.all(color: isSelected ? AppColors.navy : AppColors.border),
                                 ),
-                                child: isSelected
-                                  ? const Icon(Icons.check, color: Colors.white, size: 16)
-                                  : Center(child: Text(
-                                      String.fromCharCode(65 + idx),
-                                      style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                                child: Center(
+                                  child: Text(opt['key']!,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                                      fontWeight: FontWeight.bold,
                                     )),
+                                ),
                               ),
                               const SizedBox(width: 12),
-                              Expanded(child: Text(opt['text'] ?? '', style: const TextStyle(fontSize: 15))),
+                              Expanded(child: Text(opt['text']!, style: const TextStyle(fontSize: 15))),
                             ],
                           ),
                         ),
@@ -460,74 +446,77 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
               ),
             ),
 
-            // Question navigation dots
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              color: Colors.white,
-              child: SizedBox(
-                height: 36,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _questions.length,
-                  itemBuilder: (ctx, i) {
-                    final isAnswered = _answers.containsKey(i);
-                    final isCurrent = i == _currentIndex;
-                    final isFlagged = _flagged.contains(i);
-                    return GestureDetector(
-                      onTap: () => setState(() => _currentIndex = i),
-                      child: Container(
-                        width: 32, height: 32,
-                        margin: const EdgeInsets.only(right: 6),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isCurrent ? AppColors.navy
-                            : isAnswered ? AppColors.success
-                            : isFlagged ? AppColors.orange
-                            : AppColors.border,
-                        ),
-                        child: Center(
-                          child: Text('${i + 1}', style: TextStyle(
-                            color: (isCurrent || isAnswered || isFlagged) ? Colors.white : AppColors.textSecondary,
-                            fontWeight: FontWeight.bold, fontSize: 12,
-                          )),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-
             // Bottom navigation
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -2))],
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  if (_currentIndex > 0)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => setState(() => _currentIndex--),
-                        child: const Text('Previous'),
-                      ),
+                  // Question dots
+                  SizedBox(
+                    height: 32,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _questions.length,
+                      itemBuilder: (ctx, i) {
+                        final isAnswered = _answers.containsKey(i);
+                        final isCurrent = i == _currentIndex;
+                        final isFlagged = _flagged.contains(i);
+                        return GestureDetector(
+                          onTap: () => setState(() => _currentIndex = i),
+                          child: Container(
+                            width: 32, height: 32,
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: isCurrent ? AppColors.navy
+                                  : isFlagged ? AppColors.orange
+                                  : isAnswered ? AppColors.success
+                                  : AppColors.background,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isCurrent ? AppColors.navy : AppColors.border,
+                              ),
+                            ),
+                            child: Center(
+                              child: Text('${i + 1}',
+                                style: TextStyle(
+                                  color: (isCurrent || isAnswered || isFlagged) ? Colors.white : AppColors.textSecondary,
+                                  fontWeight: FontWeight.bold, fontSize: 12,
+                                )),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  if (_currentIndex > 0) const SizedBox(width: 12),
-                  Expanded(
-                    child: _currentIndex < _questions.length - 1
-                      ? ElevatedButton(
-                          onPressed: () => setState(() => _currentIndex++),
-                          child: const Text('Next'),
-                        )
-                      : ElevatedButton(
-                          onPressed: _submitting ? null : _confirmSubmit,
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-                          child: _submitting
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Text('Submit'),
+                  ),
+                  const SizedBox(height: 12),
+                  // Navigation buttons
+                  Row(
+                    children: [
+                      if (_currentIndex > 0)
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => setState(() => _currentIndex--),
+                            child: const Text('Previous'),
+                          ),
                         ),
+                      if (_currentIndex > 0) const SizedBox(width: 12),
+                      Expanded(
+                        child: _currentIndex < _questions.length - 1
+                            ? ElevatedButton(
+                                onPressed: () => setState(() => _currentIndex++),
+                                child: const Text('Next'),
+                              )
+                            : ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+                                onPressed: _confirmSubmit,
+                                child: const Text('Submit'),
+                              ),
+                      ),
+                    ],
                   ),
                 ],
               ),

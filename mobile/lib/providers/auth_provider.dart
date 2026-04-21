@@ -14,8 +14,8 @@ class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
-  String? get companyName => _user?['company']?['name'];
-  String? get companyId => _user?['company']?['_id'];
+  String get userName => _user?['name'] ?? 'Student';
+  String get userEmail => _user?['email'] ?? '';
 
   AuthProvider() {
     _loadUser();
@@ -55,18 +55,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> register(String name, String email, String password, String phone, {String? companyCode}) async {
-    final body = {
+  Future<void> register(String name, String email, String password, String mobile) async {
+    final data = await _api.post(ApiConstants.register, body: {
       'name': name,
       'email': email,
       'password': password,
-      'phone': phone,
-    };
-    if (companyCode != null && companyCode.isNotEmpty) {
-      body['companyCode'] = companyCode;
-    }
-    
-    final data = await _api.post(ApiConstants.register, body: body);
+      'mobile': mobile,
+    });
     
     await _api.setToken(data['token']);
     _user = data;
@@ -75,6 +70,18 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user', jsonEncode(data));
     
+    notifyListeners();
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await _api.post(ApiConstants.forgotPassword, body: {'email': email});
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> data) async {
+    final updated = await _api.put('/auth/profile', body: data);
+    _user = updated;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user', jsonEncode(updated));
     notifyListeners();
   }
 

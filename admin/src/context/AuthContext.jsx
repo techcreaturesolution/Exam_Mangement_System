@@ -19,7 +19,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { data } = await api.post('/auth/admin/login', { email, password });
+    const { data } = await api.post('/auth/login', { email, password });
+    if (data.role !== 'admin') {
+      throw new Error('Access denied. Admin only.');
+    }
     localStorage.setItem('adminToken', data.token);
     localStorage.setItem('adminUser', JSON.stringify(data));
     setUser(data);

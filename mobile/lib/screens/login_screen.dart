@@ -89,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             padding: const EdgeInsets.all(12),
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withValues(alpha: 0.1),
+                              color: AppColors.error.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
@@ -116,7 +116,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+                            child: const Text('Forgot Password?', style: TextStyle(color: AppColors.orange)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _loading ? null : _login,
                           child: _loading
@@ -128,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () => Navigator.pushNamed(context, '/register'),
                           child: RichText(
                             text: const TextSpan(
-                              text: "Don't have an account? ",
+                              text: 'Don\'t have an account? ',
                               style: TextStyle(color: AppColors.textSecondary),
                               children: [
                                 TextSpan(text: 'Sign Up', style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.bold)),

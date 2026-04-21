@@ -1,97 +1,66 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { FiShield, FiAlertTriangle } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 const Violations = () => {
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState({ violationType: '', examId: '' });
+  const [typeFilter, setTypeFilter] = useState('');
 
-  useEffect(() => { fetchViolations(); }, []);
+  useEffect(() => { fetchViolations(); }, [typeFilter]);
 
   const fetchViolations = async () => {
+    setLoading(true);
     try {
       const params = {};
-      if (filter.violationType) params.violationType = filter.violationType;
-      if (filter.examId) params.examId = filter.examId;
+      if (typeFilter) params.type = typeFilter;
       const { data } = await api.get('/violations', { params });
       setViolations(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) {
+      toast.error('Failed to fetch violations');
+    } finally { setLoading(false); }
   };
-
-  const getViolationIcon = (type) => {
-    switch (type) {
-      case 'screenshot': return '📸';
-      case 'screen_share': return '🖥️';
-      case 'app_switch': return '📱';
-      default: return '⚠️';
-    }
-  };
-
-  const getViolationLabel = (type) => {
-    switch (type) {
-      case 'screenshot': return 'Screenshot Attempt';
-      case 'screen_share': return 'Screen Share';
-      case 'app_switch': return 'App Switch';
-      default: return 'Other';
-    }
-  };
-
-  if (loading) return <div className="page-loading">Loading...</div>;
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1><FiShield style={{ marginRight: 8 }} /> Exam Violations</h1>
-      </div>
+    <div className="page">
+      <h1>Violation Monitoring</h1>
 
-      <div className="filters" style={{ marginBottom: 20, display: 'flex', gap: 12 }}>
-        <select value={filter.violationType} onChange={(e) => { setFilter({ ...filter, violationType: e.target.value }); }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
           <option value="">All Types</option>
+          <option value="app_switch">App Switch</option>
           <option value="screenshot">Screenshot</option>
           <option value="screen_share">Screen Share</option>
-          <option value="app_switch">App Switch</option>
+          <option value="minimize">Minimize</option>
+          <option value="other">Other</option>
         </select>
-        <button className="btn btn-primary btn-sm" onClick={fetchViolations}>Filter</button>
       </div>
 
-      <div className="table-container">
+      {loading ? <div className="loading">Loading...</div> : (
         <table className="data-table">
           <thead>
             <tr>
-              <th>Type</th>
               <th>Student</th>
+              <th>Email</th>
               <th>Exam</th>
-              <th>Description</th>
-              <th>Time</th>
+              <th>Type</th>
+              <th>Date</th>
             </tr>
           </thead>
           <tbody>
             {violations.map((v) => (
               <tr key={v._id}>
-                <td>
-                  <span style={{ fontSize: 18, marginRight: 6 }}>{getViolationIcon(v.violationType)}</span>
-                  <span className="badge badge-warning">{getViolationLabel(v.violationType)}</span>
-                </td>
-                <td>{v.user?.name || 'Unknown'}<br /><small>{v.user?.email}</small></td>
-                <td>{v.exam?.title || 'Unknown'}</td>
-                <td>{v.description || '-'}</td>
-                <td>{new Date(v.timestamp || v.createdAt).toLocaleString()}</td>
+                <td>{v.userId?.name || 'N/A'}</td>
+                <td>{v.userId?.email || '-'}</td>
+                <td>{v.examId?.examTitle || 'N/A'}</td>
+                <td><span className={`badge badge-violation-${v.type}`}>{v.type.replace('_', ' ')}</span></td>
+                <td>{new Date(v.createdAt).toLocaleString()}</td>
               </tr>
             ))}
+            {violations.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center' }}>No violations found</td></tr>}
           </tbody>
         </table>
-        {violations.length === 0 && (
-          <div className="empty-state">
-            <FiAlertTriangle size={48} style={{ color: '#ccc', marginBottom: 12 }} />
-            <p>No violations recorded yet.</p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

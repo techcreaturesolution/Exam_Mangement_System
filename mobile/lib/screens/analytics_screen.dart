@@ -66,7 +66,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         padding: const EdgeInsets.only(top: 100),
         child: Column(
           children: [
-            Icon(Icons.analytics, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+            Icon(Icons.analytics, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
             const SizedBox(height: 16),
             const Text('No analytics yet', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
             const SizedBox(height: 8),
@@ -177,7 +177,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               const SizedBox(height: 16),
               Center(
                 child: Text('Take some exams to see category analytics!',
-                    style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.7), fontSize: 13)),
+                    style: TextStyle(color: AppColors.textSecondary.withOpacity(0.7), fontSize: 13)),
               ),
             ],
           ),

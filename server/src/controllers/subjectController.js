@@ -4,19 +4,12 @@ const Subject = require('../models/Subject');
 // @route   GET /api/subjects
 const getSubjects = async (req, res) => {
   try {
-    const { category, isActive } = req.query;
     const filter = {};
-    if (category) filter.category = category;
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
-
-    // Apply company scoping
-    if (req.companyFilter) {
-      Object.assign(filter, req.companyFilter);
-    }
+    if (req.query.categoryId) filter.categoryId = req.query.categoryId;
+    if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
 
     const subjects = await Subject.find(filter)
-      .populate('category', 'name examType')
-      .populate('company', 'name')
+      .populate('categoryId', 'categoryName')
       .sort({ order: 1, createdAt: -1 });
     res.json(subjects);
   } catch (error) {
@@ -28,7 +21,7 @@ const getSubjects = async (req, res) => {
 // @route   GET /api/subjects/:id
 const getSubject = async (req, res) => {
   try {
-    const subject = await Subject.findById(req.params.id).populate('category');
+    const subject = await Subject.findById(req.params.id).populate('categoryId', 'categoryName');
     if (!subject) {
       return res.status(404).json({ message: 'Subject not found' });
     }
@@ -42,12 +35,8 @@ const getSubject = async (req, res) => {
 // @route   POST /api/subjects
 const createSubject = async (req, res) => {
   try {
-    const data = { ...req.body };
-    if (req.companyId) {
-      data.company = req.companyId;
-    }
-    const subject = await Subject.create(data);
-    const populated = await subject.populate('category', 'name examType');
+    const subject = await Subject.create(req.body);
+    const populated = await subject.populate('categoryId', 'categoryName');
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -61,7 +50,7 @@ const updateSubject = async (req, res) => {
     const subject = await Subject.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
-    }).populate('category', 'name examType');
+    }).populate('categoryId', 'categoryName');
     if (!subject) {
       return res.status(404).json({ message: 'Subject not found' });
     }
@@ -90,10 +79,10 @@ const deleteSubject = async (req, res) => {
 const getSubjectsByCategory = async (req, res) => {
   try {
     const subjects = await Subject.find({
-      category: req.params.categoryId,
+      categoryId: req.params.categoryId,
       isActive: true,
     })
-      .populate('category', 'name')
+      .populate('categoryId', 'categoryName')
       .sort({ order: 1 });
     res.json(subjects);
   } catch (error) {

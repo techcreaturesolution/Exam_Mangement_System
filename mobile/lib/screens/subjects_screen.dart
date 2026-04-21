@@ -19,7 +19,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _category = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (_category != null) _loadSubjects();
+    if (_category != null && _loading) _loadSubjects();
   }
 
   Future<void> _loadSubjects() async {
@@ -34,7 +34,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_category?['name'] ?? 'Subjects')),
+      appBar: AppBar(title: Text(_category?['categoryName'] ?? 'Subjects')),
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : _subjects.isEmpty
@@ -48,11 +48,10 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppColors.orange.withValues(alpha: 0.1),
+                      backgroundColor: AppColors.orange.withOpacity(0.1),
                       child: const Icon(Icons.subject, color: AppColors.orange),
                     ),
-                    title: Text(sub['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(sub['description'] ?? ''),
+                    title: Text(sub['subjectName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.pushNamed(context, '/exam-list', arguments: {
                       'category': _category,

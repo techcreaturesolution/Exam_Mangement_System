@@ -45,7 +45,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_reviewData?['exam']?['title'] ?? 'Exam Review'),
+        title: Text(_reviewData?['exam']?['examTitle'] ?? 'Exam Review'),
         actions: [
           if (_reviewData != null)
             Center(
@@ -96,7 +96,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
         // Summary bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: AppColors.navy.withValues(alpha: 0.05),
+          color: AppColors.navy.withOpacity(0.05),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -123,7 +123,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
               Color dotColor;
               if (q['isCorrect'] == true) {
                 dotColor = AppColors.success;
-              } else if (q['selectedOption'] == -1) {
+              } else if (q['selectedOption'] == null || q['selectedOption'] == '') {
                 dotColor = AppColors.warning;
               } else {
                 dotColor = AppColors.error;
@@ -135,7 +135,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
                   height: 36,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: isSelected ? dotColor : dotColor.withValues(alpha: 0.2),
+                    color: isSelected ? dotColor : dotColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: isSelected ? Border.all(color: dotColor, width: 2) : null,
                   ),
@@ -197,9 +197,19 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
   }
 
   Widget _buildQuestion(Map<String, dynamic> question) {
-    final options = question['options'] as List? ?? [];
-    final selectedOption = question['selectedOption'] ?? -1;
+    final selectedOption = question['selectedOption']?.toString() ?? '';
+    final correctAnswer = question['correctAnswer']?.toString() ?? '';
     final isCorrect = question['isCorrect'] ?? false;
+    final isSkipped = selectedOption.isEmpty;
+
+    // Build options from optionA/B/C/D
+    final optionKeys = ['A', 'B', 'C', 'D'];
+    final optionTexts = [
+      question['optionA']?.toString() ?? '',
+      question['optionB']?.toString() ?? '',
+      question['optionC']?.toString() ?? '',
+      question['optionD']?.toString() ?? '',
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,43 +218,27 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: selectedOption == -1
-                ? AppColors.warning.withValues(alpha: 0.1)
+            color: isSkipped
+                ? AppColors.warning.withOpacity(0.1)
                 : isCorrect
-                    ? AppColors.success.withValues(alpha: 0.1)
-                    : AppColors.error.withValues(alpha: 0.1),
+                    ? AppColors.success.withOpacity(0.1)
+                    : AppColors.error.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                selectedOption == -1
-                    ? Icons.skip_next
-                    : isCorrect
-                        ? Icons.check_circle
-                        : Icons.cancel,
+                isSkipped ? Icons.skip_next : isCorrect ? Icons.check_circle : Icons.cancel,
                 size: 18,
-                color: selectedOption == -1
-                    ? AppColors.warning
-                    : isCorrect
-                        ? AppColors.success
-                        : AppColors.error,
+                color: isSkipped ? AppColors.warning : isCorrect ? AppColors.success : AppColors.error,
               ),
               const SizedBox(width: 6),
               Text(
-                selectedOption == -1
-                    ? 'Skipped'
-                    : isCorrect
-                        ? 'Correct'
-                        : 'Wrong',
+                isSkipped ? 'Skipped' : isCorrect ? 'Correct' : 'Wrong',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: selectedOption == -1
-                      ? AppColors.warning
-                      : isCorrect
-                          ? AppColors.success
-                          : AppColors.error,
+                  color: isSkipped ? AppColors.warning : isCorrect ? AppColors.success : AppColors.error,
                 ),
               ),
               const SizedBox(width: 8),
@@ -259,16 +253,17 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
 
         // Question text
         Text(
-          question['questionText'] ?? '',
+          question['question'] ?? '',
           style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.4),
         ),
         const SizedBox(height: 20),
 
-        // Options
-        ...List.generate(options.length, (i) {
-          final opt = options[i];
-          final isUserSelected = i == selectedOption;
-          final isCorrectOpt = opt['isCorrect'] == true;
+        // Options A, B, C, D
+        ...List.generate(4, (i) {
+          final key = optionKeys[i];
+          final text = optionTexts[i];
+          final isUserSelected = selectedOption == key;
+          final isCorrectOpt = correctAnswer == key;
 
           Color borderColor = AppColors.border;
           Color bgColor = Colors.white;
@@ -277,12 +272,12 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
 
           if (isCorrectOpt) {
             borderColor = AppColors.success;
-            bgColor = AppColors.success.withValues(alpha: 0.05);
+            bgColor = AppColors.success.withOpacity(0.05);
             icon = Icons.check_circle;
             iconColor = AppColors.success;
           } else if (isUserSelected && !isCorrectOpt) {
             borderColor = AppColors.error;
-            bgColor = AppColors.error.withValues(alpha: 0.05);
+            bgColor = AppColors.error.withOpacity(0.05);
             icon = Icons.cancel;
             iconColor = AppColors.error;
           }
@@ -304,15 +299,15 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isCorrectOpt
-                        ? AppColors.success.withValues(alpha: 0.1)
+                        ? AppColors.success.withOpacity(0.1)
                         : isUserSelected
-                            ? AppColors.error.withValues(alpha: 0.1)
+                            ? AppColors.error.withOpacity(0.1)
                             : AppColors.background,
                     border: Border.all(color: borderColor),
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    String.fromCharCode(65 + i),
+                    key,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: isCorrectOpt
@@ -326,7 +321,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    opt['text'] ?? '',
+                    text,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: isCorrectOpt || isUserSelected ? FontWeight.w600 : FontWeight.normal,
@@ -347,9 +342,9 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.navy.withValues(alpha: 0.05),
+              color: AppColors.navy.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.navy.withValues(alpha: 0.2)),
+              border: Border.all(color: AppColors.navy.withOpacity(0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

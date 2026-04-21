@@ -14,8 +14,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _companyCodeController = TextEditingController();
+  final _mobileController = TextEditingController();
   bool _loading = false;
   bool _obscurePassword = true;
   String? _error;
@@ -27,8 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _nameController.text.trim(),
         _emailController.text.trim(),
         _passwordController.text,
-        _phoneController.text.trim(),
-        companyCode: _companyCodeController.text.trim(),
+        _mobileController.text.trim(),
       );
       if (mounted) Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
@@ -82,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.all(12),
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withValues(alpha: 0.1),
+                              color: AppColors.error.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),
@@ -100,9 +98,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 14),
                         TextField(
-                          controller: _phoneController,
+                          controller: _mobileController,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(labelText: 'Phone', prefixIcon: Icon(Icons.phone_outlined)),
+                          decoration: const InputDecoration(labelText: 'Mobile', prefixIcon: Icon(Icons.phone_outlined)),
                         ),
                         const SizedBox(height: 14),
                         TextField(
@@ -115,15 +113,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
                               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        TextField(
-                          controller: _companyCodeController,
-                          decoration: const InputDecoration(
-                            labelText: 'Company Code (Optional)',
-                            prefixIcon: Icon(Icons.business_outlined),
-                            hintText: 'Enter if provided by your organization',
                           ),
                         ),
                         const SizedBox(height: 24),

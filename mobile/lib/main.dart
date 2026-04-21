@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'constants/theme.dart';
 import 'providers/auth_provider.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/forgot_password_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/profile_screen.dart';
 import 'screens/subjects_screen.dart';
 import 'screens/exam_list_screen.dart';
 import 'screens/exam_detail_screen.dart';
@@ -16,6 +19,8 @@ import 'screens/subscriptions_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/exam_review_screen.dart';
 import 'screens/performance_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/support_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,10 +42,12 @@ class ExamApp extends StatelessWidget {
             theme: AppTheme.theme,
             initialRoute: auth.isLoading ? '/splash' : (auth.isAuthenticated ? '/home' : '/login'),
             routes: {
-              '/splash': (ctx) => const _SplashScreen(),
+              '/splash': (ctx) => const SplashScreen(),
               '/login': (ctx) => const LoginScreen(),
               '/register': (ctx) => const RegisterScreen(),
+              '/forgot-password': (ctx) => const ForgotPasswordScreen(),
               '/home': (ctx) => const HomeScreen(),
+              '/profile': (ctx) => const ProfileScreen(),
               '/subjects': (ctx) => const SubjectsScreen(),
               '/exam-list': (ctx) => const ExamListScreen(),
               '/exam-detail': (ctx) => const ExamDetailScreen(),
@@ -52,42 +59,11 @@ class ExamApp extends StatelessWidget {
               '/settings': (ctx) => const SettingsScreen(),
               '/exam-review': (ctx) => const ExamReviewScreen(),
               '/performance': (ctx) => const PerformanceScreen(),
+              '/notifications': (ctx) => const NotificationsScreen(),
+              '/support': (ctx) => const SupportScreen(),
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.navy, AppColors.navyDark],
-          ),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.school, size: 64, color: AppColors.orange),
-              SizedBox(height: 16),
-              Text('TestBharti', style: TextStyle(
-                fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white,
-              )),
-              SizedBox(height: 24),
-              CircularProgressIndicator(color: AppColors.orange),
-            ],
-          ),
-        ),
       ),
     );
   }

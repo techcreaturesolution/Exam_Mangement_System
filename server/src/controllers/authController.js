@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User');
-const Company = require('../models/Company');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -8,40 +8,32 @@ const generateToken = (id) => {
   });
 };
 
-// @desc    Register user (with company code)
+// @desc    Register student
 // @route   POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { name, email, password, phone, companyCode } = req.body;
+    const { name, email, password, mobile } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    const userData = { name, email, password, phone };
-
-    // If company code/slug provided, attach user to company
-    if (companyCode) {
-      const company = await Company.findOne({
-        $or: [{ slug: companyCode }, { _id: companyCode.match(/^[0-9a-fA-F]{24}$/) ? companyCode : null }],
-        isActive: true,
-      });
-      if (!company) {
-        return res.status(400).json({ message: 'Invalid company code' });
-      }
-      userData.company = company._id;
-    }
-
-    const user = await User.create(userData);
-    const populatedUser = await User.findById(user._id).populate('company', 'name slug logo');
+    const user = await User.create({
+      name,
+      email,
+      password,
+      mobile,
+      role: 'student',
+    });
 
     res.status(201).json({
       _id: user._id,
       name: user.name,
       email: user.email,
+      mobile: user.mobile,
       role: user.role,
-      company: populatedUser.company || null,
+      profileImage: user.profileImage,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -55,7 +47,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email }).select('+password').populate('company', 'name slug logo');
+    const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -73,10 +65,31 @@ const login = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      mobile: user.mobile,
       role: user.role,
-      company: user.company || null,
+      profileImage: user.profileImage,
       token: generateToken(user._id),
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Forgot password
+// @route   POST /api/auth/forgot-password
+const forgotPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      return res.status(404).json({ message: 'No user found with this email' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password reset successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -86,89 +99,56 @@ const login = async (req, res) => {
 // @route   GET /api/auth/me
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('company', 'name slug logo features');
+    const user = await User.findById(req.user._id);
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Admin login (company admin or master admin)
-// @route   POST /api/auth/admin/login
-const adminLogin = async (req, res) => {
+// @desc    Update profile
+// @route   PUT /api/auth/profile
+const updateProfile = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, mobile, profileImage } = req.body;
+    const user = await User.findById(req.user._id);
 
-    const user = await User.findOne({
-      email,
-      role: { $in: ['admin', 'master_admin'] },
-    }).select('+password').populate('company', 'name slug logo');
+    if (name) user.name = name;
+    if (mobile) user.mobile = mobile;
+    if (profileImage) user.profileImage = profileImage;
 
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid admin credentials' });
-    }
+    await user.save();
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-    const isMatch = await user.comparePassword(password);
+// @desc    Change password
+// @route   PUT /api/auth/change-password
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id).select('+password');
+
+    const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid admin credentials' });
+      return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({ message: 'Account is deactivated' });
-    }
-
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      company: user.company || null,
-      token: generateToken(user._id),
-    });
+    user.password = newPassword;
+    await user.save();
+    res.json({ message: 'Password changed successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get all users (admin - scoped to company)
-// @route   GET /api/auth/users
-const getUsers = async (req, res) => {
-  try {
-    const filter = {};
-
-    // Company admin can only see their company's users
-    if (req.user.role === 'admin' && req.user.company) {
-      filter.company = req.user.company._id || req.user.company;
-    }
-    // Master admin can see all or filter by company
-    if (req.user.role === 'master_admin' && req.query.companyId) {
-      filter.company = req.query.companyId;
-    }
-
-    const users = await User.find(filter)
-      .select('-password')
-      .populate('company', 'name slug')
-      .sort({ createdAt: -1 });
-
-    // Attach active plan info
-    const Payment = require('../models/Payment');
-    const usersWithPlans = await Promise.all(users.map(async (user) => {
-      const activePlan = await Payment.findOne({
-        user: user._id,
-        status: 'paid',
-        expiresAt: { $gte: new Date() },
-      }).populate('plan', 'name planType').sort({ expiresAt: -1 });
-
-      return {
-        ...user.toObject(),
-        activePlan: activePlan ? { name: activePlan.plan?.name, expiresAt: activePlan.expiresAt } : null,
-      };
-    }));
-
-    res.json(usersWithPlans);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+module.exports = {
+  register,
+  login,
+  forgotPassword,
+  getMe,
+  updateProfile,
+  changePassword,
 };
-
-module.exports = { register, login, getMe, adminLogin, getUsers };

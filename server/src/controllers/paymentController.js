@@ -1,24 +1,19 @@
 const crypto = require('crypto');
 const razorpay = require('../config/razorpay');
 const Payment = require('../models/Payment');
-const PaymentPlan = require('../models/PaymentPlan');
+const Plan = require('../models/Plan');
+const Subscription = require('../models/Subscription');
 
-// ============ PAYMENT PLAN (Admin) ============
+// ============ PLAN MANAGEMENT (Admin) ============
 
-// @desc    Get all payment plans
+// @desc    Get all plans
 // @route   GET /api/payments/plans
 const getPlans = async (req, res) => {
   try {
-    const { isActive, planType } = req.query;
     const filter = {};
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
-    if (planType) filter.planType = planType;
+    if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
 
-    const plans = await PaymentPlan.find(filter)
-      .populate('category', 'name')
-      .populate('subject', 'name')
-      .populate('exam', 'title')
-      .sort({ order: 1, createdAt: -1 });
+    const plans = await Plan.find(filter).sort({ order: 1, createdAt: -1 });
     res.json(plans);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -29,10 +24,7 @@ const getPlans = async (req, res) => {
 // @route   GET /api/payments/plans/:id
 const getPlan = async (req, res) => {
   try {
-    const plan = await PaymentPlan.findById(req.params.id)
-      .populate('category', 'name')
-      .populate('subject', 'name')
-      .populate('exam', 'title');
+    const plan = await Plan.findById(req.params.id);
     if (!plan) {
       return res.status(404).json({ message: 'Plan not found' });
     }
@@ -42,22 +34,22 @@ const getPlan = async (req, res) => {
   }
 };
 
-// @desc    Create payment plan
+// @desc    Create plan
 // @route   POST /api/payments/plans
 const createPlan = async (req, res) => {
   try {
-    const plan = await PaymentPlan.create(req.body);
+    const plan = await Plan.create(req.body);
     res.status(201).json(plan);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Update payment plan
+// @desc    Update plan
 // @route   PUT /api/payments/plans/:id
 const updatePlan = async (req, res) => {
   try {
-    const plan = await PaymentPlan.findByIdAndUpdate(req.params.id, req.body, {
+    const plan = await Plan.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
@@ -70,11 +62,11 @@ const updatePlan = async (req, res) => {
   }
 };
 
-// @desc    Delete payment plan
+// @desc    Delete plan
 // @route   DELETE /api/payments/plans/:id
 const deletePlan = async (req, res) => {
   try {
-    const plan = await PaymentPlan.findByIdAndDelete(req.params.id);
+    const plan = await Plan.findByIdAndDelete(req.params.id);
     if (!plan) {
       return res.status(404).json({ message: 'Plan not found' });
     }
@@ -92,7 +84,7 @@ const createOrder = async (req, res) => {
   try {
     const { planId } = req.body;
 
-    const plan = await PaymentPlan.findById(planId);
+    const plan = await Plan.findById(planId);
     if (!plan) {
       return res.status(404).json({ message: 'Plan not found' });
     }
@@ -104,25 +96,23 @@ const createOrder = async (req, res) => {
     const receipt = `receipt_${Date.now()}_${req.user._id.toString().slice(-6)}`;
 
     const options = {
-      amount: Math.round(plan.price * 100), // Razorpay expects amount in paise
-      currency: plan.currency || 'INR',
+      amount: Math.round(plan.price * 100),
+      currency: 'INR',
       receipt,
       notes: {
         planId: plan._id.toString(),
         userId: req.user._id.toString(),
-        planName: plan.name,
+        planName: plan.planName,
       },
     };
 
     const order = await razorpay.orders.create(options);
 
-    // Save payment record
     const payment = await Payment.create({
-      user: req.user._id,
-      plan: plan._id,
+      userId: req.user._id,
+      planId: plan._id,
       razorpayOrderId: order.id,
       amount: plan.price,
-      currency: plan.currency || 'INR',
       status: 'created',
       receipt,
     });
@@ -132,7 +122,7 @@ const createOrder = async (req, res) => {
       amount: order.amount,
       currency: order.currency,
       paymentId: payment._id,
-      planName: plan.name,
+      planName: plan.planName,
       key: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
@@ -147,7 +137,6 @@ const verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    // Verify signature
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -155,7 +144,6 @@ const verifyPayment = async (req, res) => {
       .digest('hex');
 
     if (expectedSignature !== razorpay_signature) {
-      // Update payment status to failed
       await Payment.findOneAndUpdate(
         { razorpayOrderId: razorpay_order_id },
         { status: 'failed' }
@@ -163,26 +151,33 @@ const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: 'Payment verification failed' });
     }
 
-    // Update payment record
     const payment = await Payment.findOneAndUpdate(
       { razorpayOrderId: razorpay_order_id },
       {
         razorpayPaymentId: razorpay_payment_id,
         razorpaySignature: razorpay_signature,
+        gatewayId: razorpay_payment_id,
         status: 'paid',
       },
       { new: true }
-    ).populate('plan');
+    ).populate('planId');
 
     if (!payment) {
       return res.status(404).json({ message: 'Payment record not found' });
     }
 
-    // Set expiry date based on plan duration
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + payment.plan.duration);
-    payment.expiresAt = expiresAt;
-    await payment.save();
+    // Create subscription
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + payment.planId.validityDays);
+
+    await Subscription.create({
+      userId: payment.userId,
+      planId: payment.planId._id,
+      startDate,
+      endDate,
+      status: 'active',
+    });
 
     res.json({
       message: 'Payment verified successfully',
@@ -190,8 +185,7 @@ const verifyPayment = async (req, res) => {
         _id: payment._id,
         status: payment.status,
         amount: payment.amount,
-        expiresAt: payment.expiresAt,
-        plan: payment.plan.name,
+        planName: payment.planId.planName,
       },
     });
   } catch (error) {
@@ -200,161 +194,96 @@ const verifyPayment = async (req, res) => {
   }
 };
 
-// @desc    Get user's active subscriptions
-// @route   GET /api/payments/my-subscriptions
-const getMySubscriptions = async (req, res) => {
+// @desc    Get user's active subscription
+// @route   GET /api/payments/my-subscription
+const getMySubscription = async (req, res) => {
   try {
-    const payments = await Payment.find({
-      user: req.user._id,
-      status: 'paid',
-      expiresAt: { $gte: new Date() },
+    const subscription = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active',
+      endDate: { $gte: new Date() },
     })
-      .populate({
-        path: 'plan',
-        populate: [
-          { path: 'category', select: 'name' },
-          { path: 'subject', select: 'name' },
-          { path: 'exam', select: 'title' },
-        ],
-      })
-      .sort({ expiresAt: -1 });
+      .populate('planId')
+      .sort({ endDate: -1 });
 
-    res.json(payments);
+    res.json(subscription);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 // @desc    Get user's payment history
-// @route   GET /api/payments/my-payments
-const getMyPayments = async (req, res) => {
+// @route   GET /api/payments/history
+const getPaymentHistory = async (req, res) => {
   try {
-    const payments = await Payment.find({ user: req.user._id })
-      .populate('plan', 'name price duration planType')
-      .sort({ createdAt: -1 });
-    res.json(payments);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Check if user has access to an exam
-// @route   GET /api/payments/check-access/:examId
-const checkAccess = async (req, res) => {
-  try {
-    const { examId } = req.params;
-
-    // Check for all_access plan
-    const allAccess = await Payment.findOne({
-      user: req.user._id,
-      status: 'paid',
-      expiresAt: { $gte: new Date() },
-    }).populate({
-      path: 'plan',
-      match: { planType: 'all_access' },
-    });
-
-    if (allAccess && allAccess.plan) {
-      return res.json({ hasAccess: true, type: 'all_access' });
-    }
-
-    // Check for specific exam plan
-    const examAccess = await Payment.findOne({
-      user: req.user._id,
-      status: 'paid',
-      expiresAt: { $gte: new Date() },
-    }).populate({
-      path: 'plan',
-      match: { planType: 'exam', exam: examId },
-    });
-
-    if (examAccess && examAccess.plan) {
-      return res.json({ hasAccess: true, type: 'exam' });
-    }
-
-    // Check for category/subject level access through the exam
-    const Exam = require('../models/Exam');
-    const exam = await Exam.findById(examId);
-    if (!exam) {
-      return res.status(404).json({ message: 'Exam not found' });
-    }
-
-    // Check category access
-    const categoryAccess = await Payment.findOne({
-      user: req.user._id,
-      status: 'paid',
-      expiresAt: { $gte: new Date() },
-    }).populate({
-      path: 'plan',
-      match: { planType: 'category', category: exam.category },
-    });
-
-    if (categoryAccess && categoryAccess.plan) {
-      return res.json({ hasAccess: true, type: 'category' });
-    }
-
-    // Check subject access
-    const subjectAccess = await Payment.findOne({
-      user: req.user._id,
-      status: 'paid',
-      expiresAt: { $gte: new Date() },
-    }).populate({
-      path: 'plan',
-      match: { planType: 'subject', subject: exam.subject },
-    });
-
-    if (subjectAccess && subjectAccess.plan) {
-      return res.json({ hasAccess: true, type: 'subject' });
-    }
-
-    // No access - return available plans
-    const availablePlans = await PaymentPlan.find({
-      isActive: true,
-      $or: [
-        { planType: 'all_access' },
-        { planType: 'exam', exam: examId },
-        { planType: 'category', category: exam.category },
-        { planType: 'subject', subject: exam.subject },
-      ],
-    }).sort({ price: 1 });
-
-    res.json({ hasAccess: false, availablePlans });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// @desc    Get all payments (Admin)
-// @route   GET /api/payments/all
-const getAllPayments = async (req, res) => {
-  try {
-    const { status, page = 1, limit = 20 } = req.query;
     const filter = {};
-    if (status) filter.status = status;
 
+    // If student, only show their own
+    if (req.user.role === 'student') {
+      filter.userId = req.user._id;
+    }
+
+    // Admin can filter by userId
+    if (req.user.role === 'admin' && req.query.userId) {
+      filter.userId = req.query.userId;
+    }
+
+    if (req.query.status) filter.status = req.query.status;
+
+    const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const total = await Payment.countDocuments(filter);
 
     const payments = await Payment.find(filter)
-      .populate('user', 'name email')
-      .populate('plan', 'name price duration planType')
+      .populate('userId', 'name email mobile')
+      .populate('planId', 'planName price validityDays')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Revenue stats
-    const totalRevenue = await Payment.aggregate([
-      { $match: { status: 'paid' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
-    ]);
+    // Revenue stats (admin only)
+    let totalRevenue = 0;
+    if (req.user.role === 'admin') {
+      const revenueResult = await Payment.aggregate([
+        { $match: { status: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]);
+      totalRevenue = revenueResult[0]?.total || 0;
+    }
 
     res.json({
       payments,
       total,
       page: parseInt(page),
       pages: Math.ceil(total / parseInt(limit)),
-      totalRevenue: totalRevenue[0]?.total || 0,
+      totalRevenue,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Check if user has active subscription
+// @route   GET /api/payments/check-access
+const checkAccess = async (req, res) => {
+  try {
+    const subscription = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active',
+      endDate: { $gte: new Date() },
+    }).populate('planId');
+
+    if (subscription) {
+      return res.json({
+        hasAccess: true,
+        plan: subscription.planId,
+        expiresAt: subscription.endDate,
+      });
+    }
+
+    // Return available plans
+    const availablePlans = await Plan.find({ isActive: true }).sort({ price: 1 });
+    res.json({ hasAccess: false, availablePlans });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -368,8 +297,7 @@ module.exports = {
   deletePlan,
   createOrder,
   verifyPayment,
-  getMySubscriptions,
-  getMyPayments,
+  getMySubscription,
+  getPaymentHistory,
   checkAccess,
-  getAllPayments,
 };

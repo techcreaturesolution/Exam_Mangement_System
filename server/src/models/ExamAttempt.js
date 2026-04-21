@@ -2,25 +2,26 @@ const mongoose = require('mongoose');
 
 const examAttemptSchema = new mongoose.Schema(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    exam: {
+    examId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Exam',
       required: true,
     },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     answers: [
       {
-        question: {
+        questionId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Question',
         },
-        selectedOption: {
-          type: Number,
-          default: -1,
+        selectedAnswer: {
+          type: String,
+          enum: ['A', 'B', 'C', 'D', ''],
+          default: '',
         },
         isCorrect: {
           type: Boolean,
@@ -33,15 +34,14 @@ const examAttemptSchema = new mongoose.Schema(
         timeTaken: {
           type: Number,
           default: 0,
-          comment: 'Time taken for this question in seconds',
         },
       },
     ],
-    totalMarks: {
+    score: {
       type: Number,
       default: 0,
     },
-    obtainedMarks: {
+    totalMarks: {
       type: Number,
       default: 0,
     },
@@ -49,9 +49,9 @@ const examAttemptSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    isPassed: {
-      type: Boolean,
-      default: false,
+    rank: {
+      type: Number,
+      default: 0,
     },
     correctAnswers: {
       type: Number,
@@ -65,22 +65,25 @@ const examAttemptSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    startTime: {
+    violations: {
+      type: Number,
+      default: 0,
+    },
+    startedAt: {
       type: Date,
       required: true,
     },
-    endTime: {
+    submittedAt: {
       type: Date,
     },
     status: {
       type: String,
-      enum: ['in_progress', 'completed', 'abandoned'],
+      enum: ['in_progress', 'completed', 'abandoned', 'auto_submitted'],
       default: 'in_progress',
     },
     timeSpent: {
       type: Number,
       default: 0,
-      comment: 'Total time spent in seconds',
     },
   },
   { timestamps: true }

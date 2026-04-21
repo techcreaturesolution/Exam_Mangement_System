@@ -2,51 +2,46 @@ const mongoose = require('mongoose');
 
 const questionSchema = new mongoose.Schema(
   {
-    questionText: {
-      type: String,
-      required: [true, 'Question text is required'],
-      trim: true,
-    },
-    options: [
-      {
-        text: {
-          type: String,
-          required: true,
-        },
-        isCorrect: {
-          type: Boolean,
-          default: false,
-        },
-      },
-    ],
-    explanation: {
-      type: String,
-      trim: true,
-    },
-    category: {
+    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
       required: [true, 'Category is required'],
     },
-    subject: {
+    subjectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Subject',
       required: [true, 'Subject is required'],
     },
-    level: {
+    levelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Level',
       required: [true, 'Level is required'],
     },
-    company: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Company',
-      required: [true, 'Company is required'],
-    },
-    examType: {
+    question: {
       type: String,
-      enum: ['practice', 'mock', 'both'],
-      default: 'both',
+      required: [true, 'Question text is required'],
+      trim: true,
+    },
+    optionA: {
+      type: String,
+      required: [true, 'Option A is required'],
+    },
+    optionB: {
+      type: String,
+      required: [true, 'Option B is required'],
+    },
+    optionC: {
+      type: String,
+      required: [true, 'Option C is required'],
+    },
+    optionD: {
+      type: String,
+      required: [true, 'Option D is required'],
+    },
+    answer: {
+      type: String,
+      enum: ['A', 'B', 'C', 'D'],
+      required: [true, 'Correct answer is required'],
     },
     marks: {
       type: Number,
@@ -55,6 +50,10 @@ const questionSchema = new mongoose.Schema(
     negativeMarks: {
       type: Number,
       default: 0,
+    },
+    explanation: {
+      type: String,
+      trim: true,
     },
     isActive: {
       type: Boolean,

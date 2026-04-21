@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const examSchema = new mongoose.Schema(
   {
-    title: {
+    examTitle: {
       type: String,
       required: [true, 'Exam title is required'],
       trim: true,
@@ -11,47 +11,33 @@ const examSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    examType: {
-      type: String,
-      enum: ['practice', 'mock'],
-      required: [true, 'Exam type is required'],
-    },
-    category: {
+    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
       required: [true, 'Category is required'],
     },
-    subject: {
+    subjectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Subject',
       required: [true, 'Subject is required'],
     },
-    level: {
+    levelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Level',
-      required: [true, 'Level is required'],
-    },
-    company: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Company',
-      required: [true, 'Company is required'],
     },
     totalQuestions: {
       type: Number,
       required: [true, 'Total questions is required'],
       min: 1,
     },
-    duration: {
+    durationMinutes: {
       type: Number,
       required: [true, 'Duration is required'],
       min: 1,
-      comment: 'Duration in minutes',
     },
-    passingPercentage: {
+    passingMarks: {
       type: Number,
       default: 40,
-      min: 0,
-      max: 100,
     },
     totalMarks: {
       type: Number,
@@ -61,7 +47,7 @@ const examSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    shuffleQuestions: {
+    randomQuestions: {
       type: Boolean,
       default: true,
     },
@@ -69,7 +55,11 @@ const examSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    showAnswers: {
+    allowReview: {
+      type: Boolean,
+      default: true,
+    },
+    isDemo: {
       type: Boolean,
       default: false,
     },
@@ -77,6 +67,18 @@ const examSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       comment: '0 = unlimited',
+    },
+    antiCheatEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    maxViolations: {
+      type: Number,
+      default: 3,
+    },
+    autoSubmitOnViolation: {
+      type: Boolean,
+      default: false,
     },
     instructions: {
       type: String,
@@ -88,41 +90,20 @@ const examSchema = new mongoose.Schema(
         ref: 'Question',
       },
     ],
-    isDemo: {
-      type: Boolean,
-      default: false,
-      comment: 'Demo exams are free for all users without payment',
-    },
-    allowReview: {
-      type: Boolean,
-      default: true,
-      comment: 'Allow students to review correct answers after submission',
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    // Anti-cheat / Proctoring settings
-    antiCheat: {
-      preventScreenshot: { type: Boolean, default: true },
-      preventScreenShare: { type: Boolean, default: true },
-      preventAppSwitch: { type: Boolean, default: true },
-      autoSubmitOnViolation: { type: Boolean, default: false },
-      maxViolations: { type: Number, default: 3 },
-      warningMessage: {
-        type: String,
-        default: 'Warning: Switching apps or taking screenshots during the exam is not allowed.',
-      },
-    },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-    },
     startDate: {
       type: Date,
     },
     endDate: {
       type: Date,
+    },
+    status: {
+      type: String,
+      enum: ['draft', 'active', 'completed', 'archived'],
+      default: 'active',
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     },
   },
   { timestamps: true }

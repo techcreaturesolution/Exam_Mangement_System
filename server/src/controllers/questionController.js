@@ -1,33 +1,25 @@
 const Question = require('../models/Question');
 const XLSX = require('xlsx');
 const fs = require('fs');
-const path = require('path');
 
 // @desc    Get all questions
 // @route   GET /api/questions
 const getQuestions = async (req, res) => {
   try {
-    const { category, subject, level, examType, isActive, page = 1, limit = 20 } = req.query;
+    const { categoryId, subjectId, levelId, isActive, page = 1, limit = 20 } = req.query;
     const filter = {};
-    if (category) filter.category = category;
-    if (subject) filter.subject = subject;
-    if (level) filter.level = level;
-    if (examType) filter.examType = { $in: [examType, 'both'] };
+    if (categoryId) filter.categoryId = categoryId;
+    if (subjectId) filter.subjectId = subjectId;
+    if (levelId) filter.levelId = levelId;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
-
-    // Apply company scoping
-    if (req.companyFilter) {
-      Object.assign(filter, req.companyFilter);
-    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const total = await Question.countDocuments(filter);
 
     const questions = await Question.find(filter)
-      .populate('category', 'name')
-      .populate('subject', 'name')
-      .populate('level', 'name color')
-      .populate('company', 'name')
+      .populate('categoryId', 'categoryName')
+      .populate('subjectId', 'subjectName')
+      .populate('levelId', 'levelName color')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -48,9 +40,9 @@ const getQuestions = async (req, res) => {
 const getQuestion = async (req, res) => {
   try {
     const question = await Question.findById(req.params.id)
-      .populate('category', 'name')
-      .populate('subject', 'name')
-      .populate('level', 'name color');
+      .populate('categoryId', 'categoryName')
+      .populate('subjectId', 'subjectName')
+      .populate('levelId', 'levelName color');
     if (!question) {
       return res.status(404).json({ message: 'Question not found' });
     }
@@ -64,15 +56,11 @@ const getQuestion = async (req, res) => {
 // @route   POST /api/questions
 const createQuestion = async (req, res) => {
   try {
-    const data = { ...req.body };
-    if (req.companyId) {
-      data.company = req.companyId;
-    }
-    const question = await Question.create(data);
+    const question = await Question.create(req.body);
     const populated = await question.populate([
-      { path: 'category', select: 'name' },
-      { path: 'subject', select: 'name' },
-      { path: 'level', select: 'name color' },
+      { path: 'categoryId', select: 'categoryName' },
+      { path: 'subjectId', select: 'subjectName' },
+      { path: 'levelId', select: 'levelName color' },
     ]);
     res.status(201).json(populated);
   } catch (error) {
@@ -88,9 +76,9 @@ const updateQuestion = async (req, res) => {
       new: true,
       runValidators: true,
     })
-      .populate('category', 'name')
-      .populate('subject', 'name')
-      .populate('level', 'name color');
+      .populate('categoryId', 'categoryName')
+      .populate('subjectId', 'subjectName')
+      .populate('levelId', 'levelName color');
     if (!question) {
       return res.status(404).json({ message: 'Question not found' });
     }
@@ -114,16 +102,16 @@ const deleteQuestion = async (req, res) => {
   }
 };
 
-// @desc    Bulk upload questions from Excel/CSV
-// @route   POST /api/questions/bulk-upload
-const bulkUploadQuestions = async (req, res) => {
+// @desc    Import questions from CSV/Excel
+// @route   POST /api/questions/import
+const importQuestions = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'Please upload a file' });
     }
 
-    const { category, subject, level, examType } = req.body;
-    if (!category || !subject || !level) {
+    const { categoryId, subjectId, levelId } = req.body;
+    if (!categoryId || !subjectId || !levelId) {
       return res.status(400).json({
         message: 'Category, subject, and level are required',
       });
@@ -141,37 +129,25 @@ const bulkUploadQuestions = async (req, res) => {
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       try {
-        const options = [];
-        if (row['Option A']) options.push({ text: row['Option A'], isCorrect: row['Correct Answer'] === 'A' });
-        if (row['Option B']) options.push({ text: row['Option B'], isCorrect: row['Correct Answer'] === 'B' });
-        if (row['Option C']) options.push({ text: row['Option C'], isCorrect: row['Correct Answer'] === 'C' });
-        if (row['Option D']) options.push({ text: row['Option D'], isCorrect: row['Correct Answer'] === 'D' });
-
-        if (!row['Question'] || options.length < 2) {
-          errors.push({ row: i + 2, error: 'Missing question or options' });
+        if (!row['Question'] || !row['Option A'] || !row['Option B'] || !row['Option C'] || !row['Option D'] || !row['Answer']) {
+          errors.push({ row: i + 2, error: 'Missing required fields' });
           continue;
         }
 
-        const questionData = {
-          questionText: row['Question'],
-          options,
-          explanation: row['Explanation'] || '',
-          category,
-          subject,
-          level,
-          examType: examType || 'both',
+        questions.push({
+          categoryId,
+          subjectId,
+          levelId,
+          question: row['Question'],
+          optionA: row['Option A'],
+          optionB: row['Option B'],
+          optionC: row['Option C'],
+          optionD: row['Option D'],
+          answer: row['Answer'].toUpperCase(),
           marks: row['Marks'] || 1,
           negativeMarks: row['Negative Marks'] || 0,
-        };
-
-        // Add company scope
-        if (req.companyId) {
-          questionData.company = req.companyId;
-        } else if (req.body.company) {
-          questionData.company = req.body.company;
-        }
-
-        questions.push(questionData);
+          explanation: row['Explanation'] || '',
+        });
       } catch (err) {
         errors.push({ row: i + 2, error: err.message });
       }
@@ -186,7 +162,7 @@ const bulkUploadQuestions = async (req, res) => {
     fs.unlinkSync(filePath);
 
     res.status(201).json({
-      message: `${inserted.length} questions uploaded successfully`,
+      message: `${inserted.length} questions imported successfully`,
       uploaded: inserted.length,
       errors: errors.length > 0 ? errors : undefined,
     });
@@ -195,21 +171,15 @@ const bulkUploadQuestions = async (req, res) => {
   }
 };
 
-// @desc    Get question count by filters
+// @desc    Get question count
 // @route   GET /api/questions/count
 const getQuestionCount = async (req, res) => {
   try {
-    const { category, subject, level, examType } = req.query;
+    const { categoryId, subjectId, levelId } = req.query;
     const filter = { isActive: true };
-    if (category) filter.category = category;
-    if (subject) filter.subject = subject;
-    if (level) filter.level = level;
-    if (examType) filter.examType = { $in: [examType, 'both'] };
-
-    // Apply company scoping
-    if (req.companyFilter) {
-      Object.assign(filter, req.companyFilter);
-    }
+    if (categoryId) filter.categoryId = categoryId;
+    if (subjectId) filter.subjectId = subjectId;
+    if (levelId) filter.levelId = levelId;
 
     const count = await Question.countDocuments(filter);
     res.json({ count });
@@ -224,6 +194,6 @@ module.exports = {
   createQuestion,
   updateQuestion,
   deleteQuestion,
-  bulkUploadQuestions,
+  importQuestions,
   getQuestionCount,
 };

@@ -2,24 +2,19 @@ const mongoose = require('mongoose');
 
 const subjectSchema = new mongoose.Schema(
   {
-    name: {
+    subjectName: {
       type: String,
       required: [true, 'Subject name is required'],
       trim: true,
     },
-    description: {
-      type: String,
-      trim: true,
-    },
-    category: {
+    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
       required: [true, 'Category is required'],
     },
-    company: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Company',
-      required: [true, 'Company is required'],
+    description: {
+      type: String,
+      trim: true,
     },
     icon: {
       type: String,

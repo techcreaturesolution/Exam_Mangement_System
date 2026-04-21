@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect, adminOnly } = require('../middleware/auth');
 const {
   getSubjects,
   getSubject,
@@ -8,13 +9,12 @@ const {
   deleteSubject,
   getSubjectsByCategory,
 } = require('../controllers/subjectController');
-const { protect, adminOnly, companyScope } = require('../middleware/auth');
 
-router.get('/', protect, companyScope, getSubjects);
-router.get('/:id', protect, getSubject);
+router.get('/', protect, getSubjects);
 router.get('/category/:categoryId', protect, getSubjectsByCategory);
-router.post('/', protect, adminOnly, companyScope, createSubject);
-router.put('/:id', protect, adminOnly, companyScope, updateSubject);
-router.delete('/:id', protect, adminOnly, companyScope, deleteSubject);
+router.get('/:id', protect, getSubject);
+router.post('/', protect, adminOnly, createSubject);
+router.put('/:id', protect, adminOnly, updateSubject);
+router.delete('/:id', protect, adminOnly, deleteSubject);
 
 module.exports = router;

@@ -63,7 +63,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
+          Icon(Icons.history, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
           const SizedBox(height: 16),
           const Text('No exam history yet', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
           const SizedBox(height: 8),
@@ -75,13 +75,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildHistoryCard(Map<String, dynamic> h) {
-    final isPassed = h['isPassed'] ?? false;
     final percentage = (h['percentage'] ?? 0).toDouble();
-    final correct = h['correctAnswers'] ?? 0;
-    final wrong = h['wrongAnswers'] ?? 0;
-    final unanswered = h['unanswered'] ?? 0;
-    final total = correct + wrong + unanswered;
+    final isPassed = percentage >= 60;
+    final score = h['score'] ?? 0;
     final attemptId = h['_id'];
+    final examData = h['examId'];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -102,8 +100,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: isPassed
-                        ? AppColors.success.withValues(alpha: 0.1)
-                        : AppColors.error.withValues(alpha: 0.1),
+                        ? AppColors.success.withOpacity(0.1)
+                        : AppColors.error.withOpacity(0.1),
                     child: Icon(
                       isPassed ? Icons.check : Icons.close,
                       color: isPassed ? AppColors.success : AppColors.error,
@@ -114,11 +112,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(h['exam']?['title'] ?? 'Exam',
+                        Text(examData?['examTitle'] ?? 'Exam',
                             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                         const SizedBox(height: 2),
-                        Text(
-                          '${h['exam']?['category']?['name'] ?? ''} • ${h['exam']?['subject']?['name'] ?? ''}',
+                        Text('Score: $score',
                           style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
                       ],
@@ -147,15 +144,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // Stats row
               Row(
                 children: [
-                  _miniStat(Icons.check_circle, '$correct', AppColors.success),
-                  const SizedBox(width: 16),
-                  _miniStat(Icons.cancel, '$wrong', AppColors.error),
-                  const SizedBox(width: 16),
-                  _miniStat(Icons.skip_next, '$unanswered', AppColors.warning),
-                  const SizedBox(width: 16),
-                  _miniStat(Icons.quiz, '$total', AppColors.navy),
+                  Text(h['status'] ?? '',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   const Spacer(),
-                  Text(_formatDate(h['createdAt']),
+                  Text(_formatDate(h['submittedAt'] ?? h['createdAt']),
                       style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
                 ],
               ),
@@ -188,8 +180,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         foregroundColor: AppColors.orange,
                       ),
                       onPressed: () {
-                        if (h['exam'] != null) {
-                          Navigator.pushNamed(context, '/exam-detail', arguments: h['exam']);
+                        if (examData != null) {
+                          Navigator.pushNamed(context, '/exam-detail', arguments: examData);
                         }
                       },
                     ),
@@ -200,16 +192,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _miniStat(IconData icon, String value, Color color) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 3),
-        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
-      ],
     );
   }
 
