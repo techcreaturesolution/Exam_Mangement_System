@@ -1,0 +1,96 @@
+# ============================================================
+#  Exam Management System — .gitignore
+#  Stack: Vite/React (admin) | Node.js (server) | Flutter (mobile)
+# ============================================================
+
+# ─── Node / npm ─────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ─── Environment Variables ───────────────────────────────────
+.env
+.env.*
+!.env.example        # keep the example file in repo
+
+# ─── Build Outputs ───────────────────────────────────────────
+dist/
+build/
+out/
+
+# ─── Vite / React (admin) ────────────────────────────────────
+admin/dist/
+admin/.vite/
+admin/node_modules/
+
+# ─── Server (Node.js) ────────────────────────────────────────
+server/node_modules/
+server/.env
+server/.env.*
+!server/.env.example
+
+# ─── Flutter / Dart (mobile) ─────────────────────────────────
+# Generated / ephemeral files
+mobile/.dart_tool/
+mobile/.packages
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+
+# Lock file (keep pubspec.yaml, ignore lock for top-level; keep in mobile if preferred)
+# mobile/pubspec.lock   # uncomment to also ignore lock
+
+# Android
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/app/google-services.json
+mobile/android/captures/
+mobile/android/app/*.jks
+mobile/android/app/*.keystore
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/App.framework
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/ios/Flutter/Generated.xcconfig
+mobile/ios/Flutter/ephemeral/
+mobile/ios/Runner/GeneratedPluginRegistrant.*
+mobile/ios/GoogleService-Info.plist
+
+# ─── IDE & Editor Files ──────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+*.sln.docstates
+.vs/
+
+# ─── OS Generated Files ──────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─── Testing & Coverage ──────────────────────────────────────
+coverage/
+lcov.info
+*.lcov
+
+# ─── Misc ────────────────────────────────────────────────────
+*.swp
+*.swo
+*~
+.cache/
+.temp/
+.tmp/

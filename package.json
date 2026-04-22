@@ -1,0 +1,16 @@
+{
+  "name": "exam-management-system",
+  "version": "1.0.0",
+  "description": "Exam Management System with Practice & Mock Exams - MERN Stack",
+  "private": true,
+  "workspaces": ["server", "admin"],
+  "scripts": {
+    "server": "npm run dev --workspace=server",
+    "admin": "npm run dev --workspace=admin",
+    "dev": "concurrently \"npm run server\" \"npm run admin\"",
+    "install:all": "npm install && cd mobile && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
