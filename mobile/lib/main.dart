@@ -8,14 +8,16 @@ import 'screens/register_screen.dart';
 import 'screens/forgot_password_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/subjects_screen.dart';
-import 'screens/exam_list_screen.dart';
-import 'screens/exam_detail_screen.dart';
+import 'screens/topics_screen.dart';
+import 'screens/practice_sets_screen.dart';
+import 'screens/mock_test_list_screen.dart';
+import 'screens/mock_test_instructions_screen.dart';
 import 'screens/exam_take_screen.dart';
 import 'screens/result_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/subscriptions_screen.dart';
+import 'screens/plans_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/exam_review_screen.dart';
 import 'screens/performance_screen.dart';
@@ -48,14 +50,16 @@ class ExamApp extends StatelessWidget {
               '/forgot-password': (ctx) => const ForgotPasswordScreen(),
               '/home': (ctx) => const HomeScreen(),
               '/profile': (ctx) => const ProfileScreen(),
-              '/subjects': (ctx) => const SubjectsScreen(),
-              '/exam-list': (ctx) => const ExamListScreen(),
-              '/exam-detail': (ctx) => const ExamDetailScreen(),
+              '/topics': (ctx) => const TopicsScreen(),
+              '/practice-sets': (ctx) => const PracticeSetsScreen(),
+              '/mock-tests': (ctx) => const MockTestListScreen(),
+              '/mock-test-instructions': (ctx) => const MockTestInstructionsScreen(),
               '/exam-take': (ctx) => const ExamTakeScreen(),
               '/result': (ctx) => const ResultScreen(),
               '/history': (ctx) => const HistoryScreen(),
               '/analytics': (ctx) => const AnalyticsScreen(),
               '/subscriptions': (ctx) => const SubscriptionsScreen(),
+              '/plans': (ctx) => const PlansScreen(),
               '/settings': (ctx) => const SettingsScreen(),
               '/exam-review': (ctx) => const ExamReviewScreen(),
               '/performance': (ctx) => const PerformanceScreen(),

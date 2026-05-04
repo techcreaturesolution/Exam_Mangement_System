@@ -7,6 +7,16 @@ const planSchema = new mongoose.Schema(
       required: [true, 'Plan name is required'],
       trim: true,
     },
+    planType: {
+      type: String,
+      enum: ['core', 'premium'],
+      required: [true, 'Plan type is required'],
+    },
+    originalPrice: {
+      type: Number,
+      required: [true, 'Original price is required'],
+      min: 0,
+    },
     price: {
       type: Number,
       required: [true, 'Price is required'],
@@ -26,6 +36,26 @@ const planSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    topicsAllowed: {
+      type: Number,
+      default: 0,
+      comment: '0 = unlimited (premium), N = specific number of topics allowed',
+    },
+    mockTestsAllowed: {
+      type: Number,
+      default: 0,
+      comment: '0 = unlimited (premium), N = specific number of mock tests allowed',
+    },
+    practiceAccessAll: {
+      type: Boolean,
+      default: false,
+      comment: 'If true, all practice topics accessible',
+    },
+    mockTestAccessAll: {
+      type: Boolean,
+      default: false,
+      comment: 'If true, all mock tests accessible',
+    },
     isActive: {
       type: Boolean,
       default: true,

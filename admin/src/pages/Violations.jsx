@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import CustomSelect from '../components/CustomSelect';
 
 const Violations = () => {
   const [violations, setViolations] = useState([]);
@@ -25,41 +26,48 @@ const Violations = () => {
     <div className="page">
       <h1>Violation Monitoring</h1>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-          <option value="">All Types</option>
-          <option value="app_switch">App Switch</option>
-          <option value="screenshot">Screenshot</option>
-          <option value="screen_share">Screen Share</option>
-          <option value="minimize">Minimize</option>
-          <option value="other">Other</option>
-        </select>
+      <div className="filter-row">
+        <CustomSelect
+          value={typeFilter}
+          onChange={(val) => setTypeFilter(val)}
+          placeholder="All Types"
+          options={[
+            { value: '',             label: 'All Types'    },
+            { value: 'app_switch',   label: 'App Switch'   },
+            { value: 'screenshot',   label: 'Screenshot'   },
+            { value: 'screen_share', label: 'Screen Share' },
+            { value: 'minimize',     label: 'Minimize'     },
+            { value: 'other',        label: 'Other'        },
+          ]}
+        />
       </div>
 
       {loading ? <div className="loading">Loading...</div> : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Student</th>
-              <th>Email</th>
-              <th>Exam</th>
-              <th>Type</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {violations.map((v) => (
-              <tr key={v._id}>
-                <td>{v.userId?.name || 'N/A'}</td>
-                <td>{v.userId?.email || '-'}</td>
-                <td>{v.examId?.examTitle || 'N/A'}</td>
-                <td><span className={`badge badge-violation-${v.type}`}>{v.type.replace('_', ' ')}</span></td>
-                <td>{new Date(v.createdAt).toLocaleString()}</td>
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Email</th>
+                <th>Exam</th>
+                <th>Type</th>
+                <th>Date</th>
               </tr>
-            ))}
-            {violations.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center' }}>No violations found</td></tr>}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {violations.map((v) => (
+                <tr key={v._id}>
+                  <td>{v.userId?.name || 'N/A'}</td>
+                  <td>{v.userId?.email || '-'}</td>
+                  <td>{v.examId?.examTitle || 'N/A'}</td>
+                  <td><span className={`badge badge-violation-${v.type}`}>{v.type.replace('_', ' ')}</span></td>
+                  <td>{new Date(v.createdAt).toLocaleString()}</td>
+                </tr>
+              ))}
+              {violations.length === 0 && <tr><td colSpan="5" style={{ textAlign: 'center' }}>No violations found</td></tr>}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

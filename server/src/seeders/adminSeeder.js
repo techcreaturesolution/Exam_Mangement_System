@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Level = require('../models/Level');
 const Category = require('../models/Category');
 const Subject = require('../models/Subject');
+const Plan = require('../models/Plan');
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
@@ -44,12 +45,9 @@ const seedDB = async () => {
       }
     }
 
-    // Create sample categories
+    // Create main category: Non Teaching Exam Preparation
     const categories = [
-      { categoryName: 'Mathematics', icon: 'calculate', description: 'Mathematical concepts and problem solving' },
-      { categoryName: 'Science', icon: 'science', description: 'Physics, Chemistry, Biology' },
-      { categoryName: 'English', icon: 'menu_book', description: 'Grammar, Vocabulary, Reading' },
-      { categoryName: 'General Knowledge', icon: 'public', description: 'Current affairs and general awareness' },
+      { categoryName: 'Non Teaching Exam Preparation', icon: 'school', description: 'Competitive exam preparation for non-teaching posts', order: 1 },
     ];
 
     for (const cat of categories) {
@@ -60,17 +58,25 @@ const seedDB = async () => {
       }
     }
 
-    // Create sample subjects
-    const mathCat = await Category.findOne({ categoryName: 'Mathematics' });
-    const sciCat = await Category.findOne({ categoryName: 'Science' });
+    // Create subjects/topics under Non Teaching Exam Preparation
+    const mainCat = await Category.findOne({ categoryName: 'Non Teaching Exam Preparation' });
 
-    if (mathCat) {
-      const mathSubjects = [
-        { subjectName: 'Algebra', categoryId: mathCat._id, description: 'Equations and expressions' },
-        { subjectName: 'Geometry', categoryId: mathCat._id, description: 'Shapes and spatial relationships' },
-        { subjectName: 'Trigonometry', categoryId: mathCat._id, description: 'Triangles and angles' },
+    if (mainCat) {
+      const subjects = [
+        { subjectName: 'GFR - General Financial Rules', categoryId: mainCat._id, description: 'Financial rules and regulations', order: 1 },
+        { subjectName: 'Computer Knowledge', categoryId: mainCat._id, description: 'Basic computer concepts and applications', order: 2 },
+        { subjectName: 'English Grammar', categoryId: mainCat._id, description: 'Grammar, vocabulary, comprehension', order: 3 },
+        { subjectName: 'General Knowledge', categoryId: mainCat._id, description: 'Current affairs and general awareness', order: 4 },
+        { subjectName: 'Quantitative Aptitude', categoryId: mainCat._id, description: 'Mathematical reasoning and calculations', order: 5 },
+        { subjectName: 'Reasoning', categoryId: mainCat._id, description: 'Logical and analytical reasoning', order: 6 },
+        { subjectName: 'Hindi Language', categoryId: mainCat._id, description: 'Hindi grammar and comprehension', order: 7 },
+        { subjectName: 'Office Management', categoryId: mainCat._id, description: 'Office procedures and management', order: 8 },
+        { subjectName: 'Constitution of India', categoryId: mainCat._id, description: 'Indian constitution and polity', order: 9 },
+        { subjectName: 'Science', categoryId: mainCat._id, description: 'General science concepts', order: 10 },
+        { subjectName: 'Geography', categoryId: mainCat._id, description: 'Indian and world geography', order: 11 },
       ];
-      for (const sub of mathSubjects) {
+
+      for (const sub of subjects) {
         const existing = await Subject.findOne({ subjectName: sub.subjectName, categoryId: sub.categoryId });
         if (!existing) {
           await Subject.create(sub);
@@ -79,23 +85,65 @@ const seedDB = async () => {
       }
     }
 
-    if (sciCat) {
-      const sciSubjects = [
-        { subjectName: 'Physics', categoryId: sciCat._id, description: 'Laws of nature and forces' },
-        { subjectName: 'Chemistry', categoryId: sciCat._id, description: 'Elements and reactions' },
-        { subjectName: 'Biology', categoryId: sciCat._id, description: 'Living organisms and life sciences' },
-      ];
-      for (const sub of sciSubjects) {
-        const existing = await Subject.findOne({ subjectName: sub.subjectName, categoryId: sub.categoryId });
-        if (!existing) {
-          await Subject.create(sub);
-          console.log(`Subject created: ${sub.subjectName}`);
-        }
+    // Create subscription plans
+    const plans = [
+      {
+        planName: 'Core Plan',
+        planType: 'core',
+        originalPrice: 999,
+        price: 499,
+        validityDays: 90,
+        description: 'Access to 11 topics and 3 mock tests',
+        features: [
+          'Practice by Topic',
+          'Full Length Mock Tests',
+          'Detailed Reports',
+          'Smart Analytics',
+          'Your Success',
+        ],
+        topicsAllowed: 11,
+        mockTestsAllowed: 3,
+        practiceAccessAll: false,
+        mockTestAccessAll: false,
+        order: 1,
+      },
+      {
+        planName: 'Premium Plan',
+        planType: 'premium',
+        originalPrice: 1799,
+        price: 999,
+        validityDays: 180,
+        description: 'Full access to all topics and all mock tests',
+        features: [
+          'All Practice Topics',
+          'All Mock Tests',
+          'Detailed Reports',
+          'Smart Analytics',
+          'Priority Support',
+          'Your Success',
+        ],
+        topicsAllowed: 0,
+        mockTestsAllowed: 0,
+        practiceAccessAll: true,
+        mockTestAccessAll: true,
+        order: 2,
+      },
+    ];
+
+    for (const plan of plans) {
+      const existing = await Plan.findOne({ planName: plan.planName });
+      if (!existing) {
+        await Plan.create(plan);
+        console.log(`Plan created: ${plan.planName} (₹${plan.price})`);
       }
     }
 
     console.log('\nSeed completed successfully!');
     console.log('Admin Login: admin@examportal.com / admin123456');
+    console.log('\nApp Flow:');
+    console.log('  Category: Non Teaching Exam Preparation');
+    console.log('  Topics: GFR, Computer, English, GK, etc.');
+    console.log('  Plans: Core (₹499) | Premium (₹999)');
     process.exit(0);
   } catch (error) {
     console.error('Seed error:', error);
