@@ -71,7 +71,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.15),
+                              color: Colors.green.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Text('FREE DEMO',
@@ -96,7 +96,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
             // Demo exam info
             if (isDemo)
               Card(
-                color: Colors.green.withOpacity(0.08),
+                color: Colors.green.withValues(alpha: 0.08),
                 child: const Padding(
                   padding: EdgeInsets.all(16),
                   child: Row(
@@ -123,7 +123,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
             if (antiCheatEnabled) ...[
               const SizedBox(height: 16),
               Card(
-                color: AppColors.warning.withOpacity(0.1),
+                color: AppColors.warning.withValues(alpha: 0.1),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -150,7 +150,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
             if (isLimitReached) ...[
               const SizedBox(height: 16),
               Card(
-                color: AppColors.error.withOpacity(0.08),
+                color: AppColors.error.withValues(alpha: 0.08),
                 child: const Padding(
                   padding: EdgeInsets.all(16),
                   child: Row(

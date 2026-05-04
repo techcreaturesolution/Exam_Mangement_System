@@ -88,7 +88,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.15),
+                                    color: Colors.green.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Text('FREE DEMO',
@@ -115,7 +115,7 @@ class _ExamListScreenState extends State<ExamListScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: AppColors.error.withOpacity(0.1),
+                                    color: AppColors.error.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text('Limit Reached', style: TextStyle(color: AppColors.error, fontSize: 10)),

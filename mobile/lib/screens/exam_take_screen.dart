@@ -226,14 +226,15 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
         };
       }).toList();
 
-      final result = await _api.post('/exams/${_examData!['_id']}/submit', body: {
+      final examId = _examData!['examId'] ?? _examData!['_id'];
+      final result = await _api.post('/exams/$examId/submit', body: {
         'attemptId': _attempt?['_id'],
         'answers': answers,
       });
 
       if (mounted) {
         result['attemptId'] = _attempt?['_id'];
-        result['examId'] = _examData!['_id'];
+        result['examId'] = examId;
         result['examData'] = _examData;
         result['totalQuestions'] = _questions.length;
         result['skippedAnswers'] = result['unanswered'] ?? (_questions.length - _answers.length);

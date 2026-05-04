@@ -164,7 +164,7 @@ const Landing = () => {
               <li>Limited mock tests</li>
               <li>Basic performance tracking</li>
             </ul>
-            <button onClick={() => navigate('/login')}>Choose Plan</button>
+            <button onClick={() => navigate('/admin')}>Choose Plan</button>
           </div>
           <div className="price-card popular">
             <div className="badge">Most Popular</div>

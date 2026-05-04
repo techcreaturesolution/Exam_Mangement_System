@@ -48,7 +48,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppColors.orange.withOpacity(0.1),
+                      backgroundColor: AppColors.orange.withValues(alpha: 0.1),
                       child: const Icon(Icons.subject, color: AppColors.orange),
                     ),
                     title: Text(sub['subjectName'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),

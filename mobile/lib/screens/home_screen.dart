@@ -459,7 +459,7 @@ class _MyTestsPageState extends State<_MyTestsPage> {
                                 if (exam?['allowReview'] == true)
                                   IconButton(
                                     icon: const Icon(Icons.visibility, color: AppColors.navy),
-                                    onPressed: () => Navigator.pushNamed(context, '/exam-review', arguments: {'attemptId': item['_id']}),
+                                    onPressed: () => Navigator.pushNamed(context, '/exam-review', arguments: item['_id']),
                                   ),
                               ],
                             ),
