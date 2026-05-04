@@ -94,7 +94,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                           padding: const EdgeInsets.all(20),
                           child: Column(
                             children: [
-                              Icon(Icons.credit_card_off, size: 48, color: AppColors.textSecondary.withOpacity(0.5)),
+                              Icon(Icons.credit_card_off, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.5)),
                               const SizedBox(height: 12),
                               const Text('No Active Subscription',
                                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),

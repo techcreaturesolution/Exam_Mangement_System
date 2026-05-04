@@ -11,6 +11,12 @@ const examSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    examType: {
+      type: String,
+      enum: ['practice', 'mock_test'],
+      required: [true, 'Exam type is required'],
+      default: 'practice',
+    },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
@@ -24,6 +30,11 @@ const examSchema = new mongoose.Schema(
     levelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Level',
+    },
+    setNumber: {
+      type: Number,
+      default: 1,
+      comment: 'Set number for practice exams (Set 1, Set 2, etc.)',
     },
     totalQuestions: {
       type: Number,
@@ -62,6 +73,11 @@ const examSchema = new mongoose.Schema(
     isDemo: {
       type: Boolean,
       default: false,
+    },
+    isFree: {
+      type: Boolean,
+      default: false,
+      comment: 'If true, accessible without subscription',
     },
     maxAttempts: {
       type: Number,

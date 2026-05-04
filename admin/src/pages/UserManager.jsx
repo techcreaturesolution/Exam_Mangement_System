@@ -52,52 +52,54 @@ const UserManager = () => {
     <div className="page">
       <div className="page-header">
         <h1>Student Management</h1>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8 }}>
-          <input type="text" placeholder="Search by name, email, mobile..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 280 }} />
+        <form onSubmit={handleSearch} className="filter-row" style={{ margin: 0 }}>
+          <input type="text" placeholder="Search by name, email, mobile..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <button type="submit" className="btn btn-primary">Search</button>
         </form>
       </div>
 
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Mobile</th>
-            <th>Status</th>
-            <th>Active Plan</th>
-            <th>Joined</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user._id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>{user.mobile || '-'}</td>
-              <td>
-                <span className={`badge badge-${user.isActive ? 'active' : 'inactive'}`}>
-                  {user.isActive ? 'Active' : 'Inactive'}
-                </span>
-              </td>
-              <td>
-                {user.activeSubscription ? (
-                  <span className="badge badge-active">{user.activeSubscription.planName}</span>
-                ) : <span style={{ color: '#999' }}>None</span>}
-              </td>
-              <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-              <td>
-                <button className={`btn btn-sm ${user.isActive ? 'btn-warning' : 'btn-success'}`} onClick={() => toggleActive(user._id, user.isActive)}>
-                  {user.isActive ? 'Deactivate' : 'Activate'}
-                </button>
-                <button className="btn btn-sm btn-delete" onClick={() => handleDelete(user._id)}>Delete</button>
-              </td>
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Mobile</th>
+              <th>Status</th>
+              <th>Active Plan</th>
+              <th>Joined</th>
+              <th>Actions</th>
             </tr>
-          ))}
-          {users.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center' }}>No students found</td></tr>}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user._id}>
+                <td>{user.name}</td>
+                <td>{user.email}</td>
+                <td>{user.mobile || '-'}</td>
+                <td>
+                  <span className={`badge badge-${user.isActive ? 'active' : 'inactive'}`}>
+                    {user.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td>
+                  {user.activeSubscription ? (
+                    <span className="badge badge-active">{user.activeSubscription.planName}</span>
+                  ) : <span style={{ color: '#999' }}>None</span>}
+                </td>
+                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button className={`btn btn-sm ${user.isActive ? 'btn-warning' : 'btn-success'}`} onClick={() => toggleActive(user._id, user.isActive)}>
+                    {user.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button className="btn btn-sm btn-delete" onClick={() => handleDelete(user._id)}>Delete</button>
+                </td>
+              </tr>
+            ))}
+            {users.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center' }}>No students found</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

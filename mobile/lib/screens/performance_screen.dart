@@ -99,7 +99,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -292,7 +292,7 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.navy.withOpacity(0.1),
+                            color: AppColors.navy.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text('${e['totalAttempts']} attempts',
@@ -357,8 +357,8 @@ class _PerformanceScreenState extends State<PerformanceScreen> {
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: passed
-                          ? AppColors.success.withOpacity(0.1)
-                          : AppColors.error.withOpacity(0.1),
+                          ? AppColors.success.withValues(alpha: 0.1)
+                          : AppColors.error.withValues(alpha: 0.1),
                       child: Icon(
                         passed ? Icons.check : Icons.close,
                         size: 16,

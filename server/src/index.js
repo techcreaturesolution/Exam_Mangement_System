@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsDoc = require('swagger-jsdoc');
 const connectDB = require('./config/db');
 
 // Load env
@@ -19,6 +21,37 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static uploads folder
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Swagger Configuration
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Exam Management System API',
+      version: '1.0.0',
+      description: 'API Documentation for Exam Management System',
+    },
+    servers: [
+      {
+        url: 'https://exammanagementsystem-3crf.onrender.com',
+        description: 'Live Render Server',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+  },
+  apis: [path.join(__dirname, '../swagger/swagger/*.js')], // Path to the API docs
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -45,6 +78,20 @@ app.use('/api/reports', (req, res, next) => {
   // Forward /api/reports/* to examRoutes /reports/*
   req.url = '/reports' + req.url;
   require('./routes/examRoutes')(req, res, next);
+});
+
+// Welcome route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to Exam Management System API',
+    status: 'Running',
+    documentation: 'Use /api/health for system status'
+  });
+});
+
+// Direct health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'API is healthy' });
 });
 
 // Health check

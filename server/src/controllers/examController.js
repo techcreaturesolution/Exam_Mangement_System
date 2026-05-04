@@ -6,12 +6,14 @@ const ExamAttempt = require('../models/ExamAttempt');
 // @route   GET /api/exams
 const getExams = async (req, res) => {
   try {
-    const { categoryId, subjectId, status, isDemo } = req.query;
+    const { categoryId, subjectId, status, isDemo, examType, isFree } = req.query;
     const filter = {};
     if (categoryId) filter.categoryId = categoryId;
     if (subjectId) filter.subjectId = subjectId;
     if (status) filter.status = status;
     if (isDemo !== undefined) filter.isDemo = isDemo === 'true';
+    if (examType) filter.examType = examType;
+    if (isFree !== undefined) filter.isFree = isFree === 'true';
 
     const exams = await Exam.find(filter)
       .populate('categoryId', 'categoryName')
@@ -46,11 +48,11 @@ const getExam = async (req, res) => {
 const createExam = async (req, res) => {
   try {
     const {
-      examTitle, description, categoryId, subjectId, levelId,
-      totalQuestions, durationMinutes, passingMarks, negativeMarking,
+      examTitle, description, examType, categoryId, subjectId, levelId,
+      setNumber, totalQuestions, durationMinutes, passingMarks, negativeMarking,
       randomQuestions, showResult, allowReview, maxAttempts,
       instructions, startDate, endDate, antiCheatEnabled,
-      maxViolations, autoSubmitOnViolation, isDemo,
+      maxViolations, autoSubmitOnViolation, isDemo, isFree,
     } = req.body;
 
     // Auto-select questions based on category/subject/level
@@ -81,12 +83,15 @@ const createExam = async (req, res) => {
     const totalMarks = questionDocs.reduce((sum, q) => sum + q.marks, 0);
 
     const examData = {
-      examTitle, description, categoryId, subjectId, levelId,
+      examTitle, description, examType: examType || 'practice',
+      categoryId, subjectId, levelId,
+      setNumber: setNumber || 1,
       totalQuestions, durationMinutes, passingMarks: passingMarks || 40,
       totalMarks, negativeMarking, randomQuestions, showResult,
       allowReview, maxAttempts: maxAttempts || 0, instructions,
       questions, startDate, endDate,
       isDemo: isDemo || false,
+      isFree: isFree || false,
       antiCheatEnabled: antiCheatEnabled !== false,
       maxViolations: maxViolations || 3,
       autoSubmitOnViolation: autoSubmitOnViolation || false,
@@ -375,7 +380,7 @@ const getExamHistory = async (req, res) => {
     })
       .populate({
         path: 'examId',
-        select: 'examTitle categoryId subjectId levelId durationMinutes',
+        select: 'examTitle categoryId subjectId levelId durationMinutes totalQuestions',
         populate: [
           { path: 'categoryId', select: 'categoryName' },
           { path: 'subjectId', select: 'subjectName' },

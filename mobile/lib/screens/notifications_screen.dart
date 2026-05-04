@@ -14,7 +14,7 @@ class NotificationsScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.notifications_none, size: 80, color: AppColors.textSecondary.withOpacity(0.4)),
+              Icon(Icons.notifications_none, size: 80, color: AppColors.textSecondary.withValues(alpha: 0.4)),
               const SizedBox(height: 16),
               const Text('No Notifications', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               const SizedBox(height: 8),

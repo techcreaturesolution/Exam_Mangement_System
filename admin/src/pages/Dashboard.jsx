@@ -24,28 +24,32 @@ const Dashboard = () => {
   if (loading) return <div className="loading">Loading dashboard...</div>;
 
   const statCards = [
-    { label: 'Total Students', value: stats?.totalStudents || 0, icon: <FiUsers />, color: '#1E3A6E' },
-    { label: 'Active Students', value: stats?.activeStudents || 0, icon: <FiUsers />, color: '#4CAF50' },
-    { label: 'Categories', value: stats?.totalCategories || 0, icon: <FiGrid />, color: '#FF9800' },
-    { label: 'Subjects', value: stats?.totalSubjects || 0, icon: <FiBook />, color: '#9C27B0' },
-    { label: 'Questions', value: stats?.totalQuestions || 0, icon: <FiHelpCircle />, color: '#E87722' },
-    { label: 'Total Exams', value: stats?.totalExams || 0, icon: <FiFileText />, color: '#2196F3' },
-    { label: 'Active Exams', value: stats?.activeExams || 0, icon: <FiFileText />, color: '#00BCD4' },
-    { label: 'Exam Attempts', value: stats?.totalAttempts || 0, icon: <FiTrendingUp />, color: '#607D8B' },
-    { label: 'Violations', value: stats?.totalViolations || 0, icon: <FiShield />, color: '#F44336' },
-    { label: 'Total Revenue', value: `₹${stats?.totalRevenue || 0}`, icon: <FiDollarSign />, color: '#4CAF50' },
+    { label: 'Total Students', value: stats?.totalStudents || 0, icon: <FiUsers />, color: '#6B46C1' },
+    { label: 'Active Students', value: stats?.activeStudents || 0, icon: <FiUsers />, color: '#38A169' },
+    { label: 'Categories', value: stats?.totalCategories || 0, icon: <FiGrid />, color: '#3182CE' },
+    { label: 'Subjects', value: stats?.totalSubjects || 0, icon: <FiBook />, color: '#D69E2E' },
+    { label: 'Questions', value: stats?.totalQuestions || 0, icon: <FiHelpCircle />, color: '#E53E3E' },
+    { label: 'Total Exams', value: stats?.totalExams || 0, icon: <FiFileText />, color: '#805AD5' },
+    { label: 'Active Exams', value: stats?.activeExams || 0, icon: <FiFileText />, color: '#319795' },
+    { label: 'Exam Attempts', value: stats?.totalAttempts || 0, icon: <FiTrendingUp />, color: '#4A5568' },
   ];
 
   return (
     <div className="page">
-      <h1>Dashboard</h1>
+      <div className="page-header">
+        <h1 className="page-title">Dashboard Overview</h1>
+        <div className="header-date">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+      </div>
+      
       <div className="stats-grid">
         {statCards.map((card) => (
-          <div key={card.label} className="stat-card" style={{ borderLeft: `4px solid ${card.color}` }}>
-            <div className="stat-icon" style={{ color: card.color }}>{card.icon}</div>
+          <div key={card.label} className="stat-card">
+            <div className="stat-icon" style={{ backgroundColor: `${card.color}15`, color: card.color }}>
+              {card.icon}
+            </div>
             <div className="stat-info">
-              <h3>{card.value}</h3>
               <p>{card.label}</p>
+              <h3>{card.value}</h3>
             </div>
           </div>
         ))}
@@ -54,52 +58,56 @@ const Dashboard = () => {
       <div className="dashboard-sections">
         <div className="dashboard-section">
           <h2>Recent Students</h2>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats?.recentStudents?.map((s) => (
-                <tr key={s._id}>
-                  <td>{s.name}</td>
-                  <td>{s.email}</td>
-                  <td>{new Date(s.createdAt).toLocaleDateString()}</td>
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Joined</th>
                 </tr>
-              ))}
-              {(!stats?.recentStudents || stats.recentStudents.length === 0) && (
-                <tr><td colSpan="3" style={{ textAlign: 'center' }}>No students yet</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {stats?.recentStudents?.map((s) => (
+                  <tr key={s._id}>
+                    <td style={{ fontWeight: 600 }}>{s.name}</td>
+                    <td style={{ color: 'var(--text-light)' }}>{s.email}</td>
+                    <td>{new Date(s.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {(!stats?.recentStudents || stats.recentStudents.length === 0) && (
+                  <tr><td colSpan="3" style={{ textAlign: 'center' }}>No students yet</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="dashboard-section">
           <h2>Recent Exam Attempts</h2>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Exam</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stats?.recentAttempts?.map((a) => (
-                <tr key={a._id}>
-                  <td>{a.userId?.name || 'N/A'}</td>
-                  <td>{a.examId?.examTitle || 'N/A'}</td>
-                  <td>{new Date(a.createdAt).toLocaleDateString()}</td>
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Exam</th>
+                  <th>Date</th>
                 </tr>
-              ))}
-              {(!stats?.recentAttempts || stats.recentAttempts.length === 0) && (
-                <tr><td colSpan="3" style={{ textAlign: 'center' }}>No attempts yet</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {stats?.recentAttempts?.map((a) => (
+                  <tr key={a._id}>
+                    <td style={{ fontWeight: 600 }}>{a.userId?.name || 'N/A'}</td>
+                    <td style={{ color: 'var(--primary)', fontWeight: 500 }}>{a.examId?.examTitle || 'N/A'}</td>
+                    <td>{new Date(a.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {(!stats?.recentAttempts || stats.recentAttempts.length === 0) && (
+                  <tr><td colSpan="3" style={{ textAlign: 'center' }}>No attempts yet</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

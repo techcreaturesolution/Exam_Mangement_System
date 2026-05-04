@@ -23,7 +23,7 @@ class SettingsScreen extends StatelessWidget {
                   subtitle: const Text('Receive exam reminders'),
                   value: true,
                   onChanged: (v) {},
-                  activeColor: AppColors.navy,
+                  activeTrackColor: AppColors.navy,
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
@@ -31,7 +31,7 @@ class SettingsScreen extends StatelessWidget {
                   subtitle: const Text('Coming soon'),
                   value: false,
                   onChanged: null,
-                  activeColor: AppColors.navy,
+                  activeTrackColor: AppColors.navy,
                 ),
               ],
             ),

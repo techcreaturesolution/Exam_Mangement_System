@@ -96,7 +96,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
         // Summary bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          color: AppColors.navy.withOpacity(0.05),
+          color: AppColors.navy.withValues(alpha: 0.05),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -135,7 +135,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
                   height: 36,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: isSelected ? dotColor : dotColor.withOpacity(0.2),
+                    color: isSelected ? dotColor : dotColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: isSelected ? Border.all(color: dotColor, width: 2) : null,
                   ),
@@ -219,10 +219,10 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: isSkipped
-                ? AppColors.warning.withOpacity(0.1)
+                ? AppColors.warning.withValues(alpha: 0.1)
                 : isCorrect
-                    ? AppColors.success.withOpacity(0.1)
-                    : AppColors.error.withOpacity(0.1),
+                    ? AppColors.success.withValues(alpha: 0.1)
+                    : AppColors.error.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -272,12 +272,12 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
 
           if (isCorrectOpt) {
             borderColor = AppColors.success;
-            bgColor = AppColors.success.withOpacity(0.05);
+            bgColor = AppColors.success.withValues(alpha: 0.05);
             icon = Icons.check_circle;
             iconColor = AppColors.success;
           } else if (isUserSelected && !isCorrectOpt) {
             borderColor = AppColors.error;
-            bgColor = AppColors.error.withOpacity(0.05);
+            bgColor = AppColors.error.withValues(alpha: 0.05);
             icon = Icons.cancel;
             iconColor = AppColors.error;
           }
@@ -299,9 +299,9 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isCorrectOpt
-                        ? AppColors.success.withOpacity(0.1)
+                        ? AppColors.success.withValues(alpha: 0.1)
                         : isUserSelected
-                            ? AppColors.error.withOpacity(0.1)
+                            ? AppColors.error.withValues(alpha: 0.1)
                             : AppColors.background,
                     border: Border.all(color: borderColor),
                   ),
@@ -342,9 +342,9 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.navy.withOpacity(0.05),
+              color: AppColors.navy.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.navy.withOpacity(0.2)),
+              border: Border.all(color: AppColors.navy.withValues(alpha: 0.2)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
