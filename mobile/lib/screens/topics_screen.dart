@@ -48,7 +48,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
 
   bool _isTopicLocked(int index) {
     if (_subscription == null) return index > 0;
-    final plan = _subscription!['plan'];
+    final plan = _subscription!['planId'];
     if (plan == null) return index > 0;
     if (plan['practiceAccessAll'] == true) return false;
     final topicsAllowed = plan['topicsAllowed'] ?? 0;
