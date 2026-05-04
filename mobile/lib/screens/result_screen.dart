@@ -201,7 +201,11 @@ class _ResultScreenState extends State<ResultScreen> {
                       foregroundColor: AppColors.orange,
                     ),
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/exam-detail', arguments: result['examData']);
+                      final examData = result['examData'];
+                      Navigator.pushReplacementNamed(context, '/exam-take', arguments: {
+                        'examId': examData?['_id'] ?? result['examId'],
+                        'examTitle': examData?['examTitle'] ?? 'Exam',
+                      });
                     },
                   ),
                 ),

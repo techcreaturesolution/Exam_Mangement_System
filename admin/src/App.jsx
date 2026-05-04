@@ -18,6 +18,8 @@ import UserManager from './pages/UserManager';
 import Reports from './pages/Reports';
 import Violations from './pages/Violations';
 import Settings from './pages/Settings';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsConditions from './pages/TermsConditions';
 import './App.css';
 
 function App() {
@@ -27,6 +29,8 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Landing />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
           <Route
             path="/admin"
             element={

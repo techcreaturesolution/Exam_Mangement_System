@@ -181,7 +181,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ),
                       onPressed: () {
                         if (examData != null) {
-                          Navigator.pushNamed(context, '/exam-detail', arguments: examData);
+                          Navigator.pushNamed(context, '/exam-take', arguments: {
+                            'examId': examData['_id'],
+                            'examTitle': examData['examTitle'],
+                          });
                         }
                       },
                     ),
