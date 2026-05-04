@@ -63,7 +63,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
+          Icon(Icons.history, size: 64, color: AppColors.textSecondary.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           const Text('No exam history yet', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
           const SizedBox(height: 8),
@@ -100,8 +100,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   CircleAvatar(
                     radius: 22,
                     backgroundColor: isPassed
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.error.withOpacity(0.1),
+                        ? AppColors.success.withValues(alpha: 0.1)
+                        : AppColors.error.withValues(alpha: 0.1),
                     child: Icon(
                       isPassed ? Icons.check : Icons.close,
                       color: isPassed ? AppColors.success : AppColors.error,

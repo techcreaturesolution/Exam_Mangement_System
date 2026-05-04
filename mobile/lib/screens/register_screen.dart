@@ -80,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.all(12),
                             margin: const EdgeInsets.only(bottom: 16),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.1),
+                              color: AppColors.error.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13)),

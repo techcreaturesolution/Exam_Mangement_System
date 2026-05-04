@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import CustomSelect from '../components/CustomSelect';
+
 
 const Questions = () => {
   const [questions, setQuestions] = useState([]);
@@ -134,18 +136,33 @@ const Questions = () => {
       </div>
 
       <div className="filters" style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <select value={filters.categoryId} onChange={(e) => { setFilters({ ...filters, categoryId: e.target.value, subjectId: '' }); setPage(1); }}>
-          <option value="">All Categories</option>
-          {categories.map(c => <option key={c._id} value={c._id}>{c.categoryName}</option>)}
-        </select>
-        <select value={filters.subjectId} onChange={(e) => { setFilters({ ...filters, subjectId: e.target.value }); setPage(1); }}>
-          <option value="">All Subjects</option>
-          {getFilteredSubjects(filters.categoryId).map(s => <option key={s._id} value={s._id}>{s.subjectName}</option>)}
-        </select>
-        <select value={filters.levelId} onChange={(e) => { setFilters({ ...filters, levelId: e.target.value }); setPage(1); }}>
-          <option value="">All Levels</option>
-          {levels.map(l => <option key={l._id} value={l._id}>{l.levelName}</option>)}
-        </select>
+        <CustomSelect
+          value={filters.categoryId}
+          onChange={(val) => { setFilters({ ...filters, categoryId: val, subjectId: '' }); setPage(1); }}
+          placeholder="All Categories"
+          options={[
+            { value: '', label: 'All Categories' },
+            ...categories.map(c => ({ value: c._id, label: c.categoryName })),
+          ]}
+        />
+        <CustomSelect
+          value={filters.subjectId}
+          onChange={(val) => { setFilters({ ...filters, subjectId: val }); setPage(1); }}
+          placeholder="All Subjects"
+          options={[
+            { value: '', label: 'All Subjects' },
+            ...getFilteredSubjects(filters.categoryId).map(s => ({ value: s._id, label: s.subjectName })),
+          ]}
+        />
+        <CustomSelect
+          value={filters.levelId}
+          onChange={(val) => { setFilters({ ...filters, levelId: val }); setPage(1); }}
+          placeholder="All Levels"
+          options={[
+            { value: '', label: 'All Levels' },
+            ...levels.map(l => ({ value: l._id, label: l.levelName })),
+          ]}
+        />
       </div>
 
       {loading ? <div className="loading">Loading...</div> : (

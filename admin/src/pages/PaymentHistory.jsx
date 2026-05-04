@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import CustomSelect from '../components/CustomSelect';
 
 const PaymentHistory = () => {
   const [payments, setPayments] = useState([]);
@@ -35,13 +36,18 @@ const PaymentHistory = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-          <option value="">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="created">Pending</option>
-          <option value="failed">Failed</option>
-        </select>
+      <div className="filter-row">
+        <CustomSelect
+          value={statusFilter}
+          onChange={(val) => { setStatusFilter(val); setPage(1); }}
+          placeholder="All Status"
+          options={[
+            { value: '',        label: 'All Status' },
+            { value: 'paid',    label: 'Paid'       },
+            { value: 'created', label: 'Pending'    },
+            { value: 'failed',  label: 'Failed'     },
+          ]}
+        />
       </div>
 
       {loading ? <div className="loading">Loading...</div> : (

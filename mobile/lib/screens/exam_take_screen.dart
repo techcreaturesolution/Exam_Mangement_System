@@ -167,7 +167,8 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
 
   Future<void> _startExam() async {
     try {
-      final data = await _api.post('/exams/${_examData!['_id']}/start');
+      final examId = _examData!['examId'] ?? _examData!['_id'];
+      final data = await _api.post('/exams/$examId/start');
       
       setState(() {
         _attempt = data['attempt'];
@@ -310,7 +311,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isTimeLow ? AppColors.error : Colors.white.withOpacity(0.2),
+                color: isTimeLow ? AppColors.error : Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -342,7 +343,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                color: AppColors.error.withOpacity(0.1),
+                color: AppColors.error.withValues(alpha: 0.1),
                 child: Row(
                   children: [
                     const Icon(Icons.shield, size: 14, color: AppColors.error),
@@ -410,7 +411,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.navy.withOpacity(0.08) : Colors.white,
+                            color: isSelected ? AppColors.navy.withValues(alpha: 0.08) : Colors.white,
                             border: Border.all(
                               color: isSelected ? AppColors.navy : AppColors.border,
                               width: isSelected ? 2 : 1,
@@ -451,7 +452,7 @@ class _ExamTakeScreenState extends State<ExamTakeScreen> with WidgetsBindingObse
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))],
               ),
               child: Column(
                 children: [

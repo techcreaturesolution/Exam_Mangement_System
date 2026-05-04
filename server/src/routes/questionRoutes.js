@@ -14,9 +14,15 @@ const {
 } = require('../controllers/questionController');
 
 // Multer config for file upload
+const fs = require('fs');
+const uploadsDir = path.join(__dirname, '../../uploads');
+// Ensure uploads directory exists
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     cb(null, `questions_${Date.now()}${path.extname(file.originalname)}`);

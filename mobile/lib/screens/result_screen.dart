@@ -104,7 +104,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isPassed ? AppColors.success.withOpacity(0.1) : AppColors.error.withOpacity(0.1),
+                          color: isPassed ? AppColors.success.withValues(alpha: 0.1) : AppColors.error.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -324,7 +324,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 alignment: Alignment.center,
@@ -358,13 +358,13 @@ class _ResultScreenState extends State<ResultScreen> {
             Color? optIconColor;
 
             if (isCorrectOpt) {
-              bgColor = AppColors.success.withOpacity(0.08);
+              bgColor = AppColors.success.withValues(alpha: 0.08);
               textColor = AppColors.success;
               weight = FontWeight.w600;
               optIcon = Icons.check_circle;
               optIconColor = AppColors.success;
             } else if (isUserSelected && !isCorrectOpt) {
-              bgColor = AppColors.error.withOpacity(0.08);
+              bgColor = AppColors.error.withValues(alpha: 0.08);
               textColor = AppColors.error;
               weight = FontWeight.w600;
               optIcon = Icons.cancel;
@@ -410,9 +410,9 @@ class _ResultScreenState extends State<ResultScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.navy.withOpacity(0.04),
+                color: AppColors.navy.withValues(alpha: 0.04),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.navy.withOpacity(0.12)),
+                border: Border.all(color: AppColors.navy.withValues(alpha: 0.12)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
