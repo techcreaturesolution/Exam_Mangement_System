@@ -48,7 +48,7 @@ class _MockTestListScreenState extends State<MockTestListScreen> {
     if (plan == null) return true;
     if (plan['mockTestAccessAll'] == true) return false;
     final allowed = plan['mockTestsAllowed'] ?? 0;
-    if (allowed == 0) return false;
+    if (allowed <= 0) return true; // 0 or unset means no access without mockTestAccessAll
     return index >= allowed;
   }
 

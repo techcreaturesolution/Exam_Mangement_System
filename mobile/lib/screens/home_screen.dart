@@ -441,8 +441,8 @@ class _MyTestsPageState extends State<_MyTestsPage> {
                         final item = _history[i];
                         final exam = item['examId'];
                         final score = item['score'] ?? 0;
-                        final total = exam?['totalQuestions'] ?? 0;
-                        final percentage = total > 0 ? ((score / total) * 100).round() : 0;
+                        final total = exam?['totalQuestions'] ?? item['totalMarks'] ?? 0;
+                        final percentage = item['percentage'] != null ? (item['percentage'] as num).round() : (total > 0 ? ((score / total) * 100).round() : 0);
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(

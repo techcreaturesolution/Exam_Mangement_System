@@ -52,7 +52,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
     if (plan == null) return index > 0;
     if (plan['practiceAccessAll'] == true) return false;
     final topicsAllowed = plan['topicsAllowed'] ?? 0;
-    if (topicsAllowed == 0) return false;
+    if (topicsAllowed <= 0) return true; // 0 or unset means no access without practiceAccessAll
     return index >= topicsAllowed;
   }
 

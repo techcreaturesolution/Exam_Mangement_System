@@ -380,7 +380,7 @@ const getExamHistory = async (req, res) => {
     })
       .populate({
         path: 'examId',
-        select: 'examTitle categoryId subjectId levelId durationMinutes',
+        select: 'examTitle categoryId subjectId levelId durationMinutes totalQuestions',
         populate: [
           { path: 'categoryId', select: 'categoryName' },
           { path: 'subjectId', select: 'subjectName' },
