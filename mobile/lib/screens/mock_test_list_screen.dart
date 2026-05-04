@@ -44,7 +44,7 @@ class _MockTestListScreenState extends State<MockTestListScreen> {
       return false;
     }
     if (_subscription == null) return true;
-    final plan = _subscription!['plan'];
+    final plan = _subscription!['planId'];
     if (plan == null) return true;
     if (plan['mockTestAccessAll'] == true) return false;
     final allowed = plan['mockTestsAllowed'] ?? 0;
