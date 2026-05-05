@@ -36,6 +36,10 @@ class ApiConstants {
   static const String checkAccess = '/payments/check-access';
   static const String paymentHistory = '/payments/history';
   
+  // Plan Upgrade
+  static const String upgradePrice = '/payments/upgrade-price';
+  static const String createUpgradeOrder = '/payments/create-upgrade-order';
+  
   // Violations
   static const String violations = '/violations';
 }

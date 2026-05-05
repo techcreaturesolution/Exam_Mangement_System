@@ -85,21 +85,22 @@ const seedDB = async () => {
       }
     }
 
-    // Create subscription plans
+    // Create subscription plans (6-month & 1-year)
     const plans = [
       {
-        planName: 'Core Plan',
+        planName: '6-Month Core Plan',
         planType: 'core',
+        durationMonths: 6,
         originalPrice: 999,
         price: 499,
-        validityDays: 90,
-        description: 'Access to 11 topics and 3 mock tests',
+        validityDays: 180,
+        description: 'Access to selected topics and mock tests for 6 months',
         features: [
-          'Practice by Topic',
-          'Full Length Mock Tests',
+          'Practice by Topic (Limited)',
+          'Selected Mock Tests',
           'Detailed Reports',
           'Smart Analytics',
-          'Your Success',
+          'Upgradeable to 1-Year',
         ],
         topicsAllowed: 11,
         mockTestsAllowed: 3,
@@ -108,19 +109,20 @@ const seedDB = async () => {
         order: 1,
       },
       {
-        planName: 'Premium Plan',
+        planName: '1-Year Premium Plan',
         planType: 'premium',
+        durationMonths: 12,
         originalPrice: 1799,
         price: 999,
-        validityDays: 180,
-        description: 'Full access to all topics and all mock tests',
+        validityDays: 365,
+        description: 'Full access to all topics and all mock tests for 1 year',
         features: [
           'All Practice Topics',
           'All Mock Tests',
           'Detailed Reports',
           'Smart Analytics',
           'Priority Support',
-          'Your Success',
+          'Full Access - Best Value',
         ],
         topicsAllowed: 0,
         mockTestsAllowed: 0,
@@ -134,7 +136,7 @@ const seedDB = async () => {
       const existing = await Plan.findOne({ planName: plan.planName });
       if (!existing) {
         await Plan.create(plan);
-        console.log(`Plan created: ${plan.planName} (₹${plan.price})`);
+        console.log(`Plan created: ${plan.planName} (₹${plan.price} / ${plan.durationMonths} months)`);
       }
     }
 
@@ -143,7 +145,8 @@ const seedDB = async () => {
     console.log('\nApp Flow:');
     console.log('  Category: Non Teaching Exam Preparation');
     console.log('  Topics: GFR, Computer, English, GK, etc.');
-    console.log('  Plans: Core (₹499) | Premium (₹999)');
+    console.log('  Plans: 6-Month Core (₹499) | 1-Year Premium (₹999)');
+    console.log('  Upgrade: 6-month → 1-year by paying ₹500 difference');
     process.exit(0);
   } catch (error) {
     console.error('Seed error:', error);

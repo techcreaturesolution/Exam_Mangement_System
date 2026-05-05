@@ -12,6 +12,8 @@ const {
   getMySubscription,
   getPaymentHistory,
   checkAccess,
+  getUpgradePrice,
+  createUpgradeOrder,
 } = require('../controllers/paymentController');
 
 // Plan management (admin)
@@ -27,5 +29,9 @@ router.post('/verify', protect, verifyPayment);
 router.get('/my-subscription', protect, getMySubscription);
 router.get('/check-access', protect, checkAccess);
 router.get('/history', protect, getPaymentHistory);
+
+// Plan upgrade
+router.get('/upgrade-price', protect, getUpgradePrice);
+router.post('/create-upgrade-order', protect, createUpgradeOrder);
 
 module.exports = router;
