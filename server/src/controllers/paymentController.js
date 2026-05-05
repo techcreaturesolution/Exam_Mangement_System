@@ -177,19 +177,7 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ message: 'Payment record not found' });
     }
 
-    // Handle upgrade using server-stored data (not client input)
-    if (payment.isUpgrade && payment.oldSubscriptionId) {
-      const oldSub = await Subscription.findOne({
-        _id: payment.oldSubscriptionId,
-        userId: payment.userId,
-        status: 'active',
-      });
-      if (oldSub) {
-        await Subscription.findByIdAndUpdate(oldSub._id, { status: 'upgraded' });
-      }
-    }
-
-    // Create new subscription
+    // Create new subscription first (safer: if this fails, old sub stays active)
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + payment.planId.validityDays);
@@ -204,6 +192,18 @@ const verifyPayment = async (req, res) => {
       isUpgrade: payment.isUpgrade || false,
       upgradedFrom: payment.oldSubscriptionId || null,
     });
+
+    // Handle upgrade: deactivate old subscription AFTER new one is created
+    if (payment.isUpgrade && payment.oldSubscriptionId) {
+      const oldSub = await Subscription.findOne({
+        _id: payment.oldSubscriptionId,
+        userId: payment.userId,
+        status: 'active',
+      });
+      if (oldSub) {
+        await Subscription.findByIdAndUpdate(oldSub._id, { status: 'upgraded' });
+      }
+    }
 
     res.json({
       message: 'Payment verified successfully',
@@ -251,7 +251,7 @@ const getUpgradePrice = async (req, res) => {
       return res.status(404).json({ message: 'No 1-year plan available' });
     }
 
-    const amountAlreadyPaid = currentSub.amountPaid || 0;
+    const amountAlreadyPaid = currentSub.amountPaid || currentSub.planId.price || 0;
     const upgradePrice = Math.max(0, yearlyPlan.price - amountAlreadyPaid);
 
     res.json({
@@ -306,7 +306,7 @@ const createUpgradeOrder = async (req, res) => {
       return res.status(404).json({ message: 'No 1-year plan available' });
     }
 
-    const amountAlreadyPaid = currentSub.amountPaid || 0;
+    const amountAlreadyPaid = currentSub.amountPaid || currentSub.planId.price || 0;
     const upgradePrice = Math.max(0, yearlyPlan.price - amountAlreadyPaid);
 
     if (upgradePrice <= 0) {
