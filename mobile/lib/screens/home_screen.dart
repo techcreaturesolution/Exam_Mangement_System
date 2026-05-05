@@ -166,6 +166,8 @@ class _HomePageState extends State<_HomePage> {
 
                     // Plan Selection Section
                     const Text('Subscription Plans', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                    const SizedBox(height: 4),
+                    const Text('6-Month & 1-Year plans available', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     const SizedBox(height: 12),
                     _buildPlanSelectionCard(),
 
@@ -482,8 +484,31 @@ class _MyTestsPageState extends State<_MyTestsPage> {
 }
 
 // === PROFILE TAB ===
-class _ProfilePage extends StatelessWidget {
+class _ProfilePage extends StatefulWidget {
   const _ProfilePage();
+  @override
+  State<_ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<_ProfilePage> {
+  final ApiService _api = ApiService();
+  Map<String, dynamic>? _subscription;
+  bool _loadingSub = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubscription();
+  }
+
+  Future<void> _loadSubscription() async {
+    try {
+      final sub = await _api.get(ApiConstants.mySubscription);
+      setState(() { _subscription = sub; _loadingSub = false; });
+    } catch (_) {
+      setState(() => _loadingSub = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -518,8 +543,12 @@ class _ProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+
+            // Active Plan Card
+            if (!_loadingSub) _buildPlanStatusCard(),
+
             _buildMenuItem(context, Icons.person, 'Edit Profile', '/profile'),
-            _buildMenuItem(context, Icons.workspace_premium, 'My Subscription', '/subscriptions'),
+            _buildMenuItem(context, Icons.workspace_premium, 'Subscription Plans', '/plans'),
             _buildMenuItem(context, Icons.bar_chart, 'Performance Report', '/analytics'),
             _buildMenuItem(context, Icons.history, 'Exam History', '/history'),
             _buildMenuItem(context, Icons.settings, 'Settings', '/settings'),
@@ -547,6 +576,139 @@ class _ProfilePage extends StatelessWidget {
             const SizedBox(height: 24),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlanStatusCard() {
+    if (_subscription == null) {
+      // No active plan
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: InkWell(
+          onTap: () => Navigator.pushNamed(context, '/plans'),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFFFFF3E0), Color(0xFFFFF8E1)]),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.orange.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.orange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.lock_open, color: AppColors.orange, size: 24),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('No Active Plan', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                      SizedBox(height: 2),
+                      Text('Subscribe to unlock all features', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: AppColors.orange, borderRadius: BorderRadius.circular(20)),
+                  child: const Text('Subscribe', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final plan = _subscription!['planId'];
+    if (plan == null) return const SizedBox.shrink();
+    final durationMonths = plan['durationMonths'] ?? 0;
+    final endDate = _subscription!['endDate'] ?? '';
+    final daysLeft = endDate.isNotEmpty ? DateTime.parse(endDate).difference(DateTime.now()).inDays : 0;
+    final canUpgrade = durationMonths == 6;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: durationMonths == 12
+              ? [AppColors.orange.withValues(alpha: 0.15), AppColors.orange.withValues(alpha: 0.05)]
+              : [AppColors.navy.withValues(alpha: 0.1), AppColors.navy.withValues(alpha: 0.05)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: (durationMonths == 12 ? AppColors.orange : AppColors.navy).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: (durationMonths == 12 ? AppColors.orange : AppColors.navy).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.card_membership,
+                  color: durationMonths == 12 ? AppColors.orange : AppColors.navy,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plan['planName'] ?? 'Active Plan',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${durationMonths == 12 ? "1 Year" : "6 Months"} \u2022 $daysLeft days left',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text('Active', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          if (canUpgrade) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.upgrade, color: AppColors.orange, size: 18),
+                label: const Text('Upgrade to 1-Year Full Access', style: TextStyle(color: AppColors.orange, fontWeight: FontWeight.w600, fontSize: 13)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.orange),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+                onPressed: () => Navigator.pushNamed(context, '/plans'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

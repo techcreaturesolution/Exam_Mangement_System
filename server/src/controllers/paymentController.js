@@ -12,6 +12,7 @@ const getPlans = async (req, res) => {
   try {
     const filter = {};
     if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === 'true';
+    if (req.query.durationMonths) filter.durationMonths = parseInt(req.query.durationMonths);
 
     const plans = await Plan.find(filter).sort({ order: 1, createdAt: -1 });
     res.json(plans);
@@ -93,6 +94,16 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'This plan is no longer available' });
     }
 
+    // Reject if user already has an active subscription — must use upgrade endpoint instead
+    const existingSub = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active',
+      endDate: { $gte: new Date() },
+    });
+    if (existingSub) {
+      return res.status(400).json({ message: 'You already have an active subscription. Use the upgrade option to change plans.' });
+    }
+
     const receipt = `receipt_${Date.now()}_${req.user._id.toString().slice(-6)}`;
 
     const options = {
@@ -145,14 +156,37 @@ const verifyPayment = async (req, res) => {
 
     if (expectedSignature !== razorpay_signature) {
       await Payment.findOneAndUpdate(
-        { razorpayOrderId: razorpay_order_id },
+        { razorpayOrderId: razorpay_order_id, userId: req.user._id, status: 'created' },
         { status: 'failed' }
       );
       return res.status(400).json({ message: 'Payment verification failed' });
     }
 
+    // First, find the payment without updating to validate upgrade state
+    const pendingPayment = await Payment.findOne(
+      { razorpayOrderId: razorpay_order_id, userId: req.user._id, status: 'created' }
+    ).populate('planId');
+
+    if (!pendingPayment) {
+      return res.status(404).json({ message: 'Payment record not found' });
+    }
+
+    // For upgrades, validate old subscription is still active BEFORE marking payment as paid
+    if (pendingPayment.isUpgrade && pendingPayment.oldSubscriptionId) {
+      const oldSub = await Subscription.findOne({
+        _id: pendingPayment.oldSubscriptionId,
+        userId: pendingPayment.userId,
+        status: 'active',
+      });
+      if (!oldSub) {
+        await Payment.findByIdAndUpdate(pendingPayment._id, { status: 'refund_needed' });
+        return res.status(400).json({ message: 'Subscription was already upgraded. Payment marked for refund.' });
+      }
+    }
+
+    // Now atomically mark payment as paid
     const payment = await Payment.findOneAndUpdate(
-      { razorpayOrderId: razorpay_order_id },
+      { _id: pendingPayment._id, status: 'created' },
       {
         razorpayPaymentId: razorpay_payment_id,
         razorpaySignature: razorpay_signature,
@@ -166,7 +200,7 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ message: 'Payment record not found' });
     }
 
-    // Create subscription
+    // Create new subscription
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + payment.planId.validityDays);
@@ -176,8 +210,19 @@ const verifyPayment = async (req, res) => {
       planId: payment.planId._id,
       startDate,
       endDate,
+      amountPaid: payment.amount,
       status: 'active',
+      isUpgrade: payment.isUpgrade || false,
+      upgradedFrom: payment.oldSubscriptionId || null,
     });
+
+    // Handle upgrade: deactivate old subscription AFTER new one is created
+    if (payment.isUpgrade && payment.oldSubscriptionId) {
+      await Subscription.findOneAndUpdate(
+        { _id: payment.oldSubscriptionId, userId: payment.userId, status: 'active' },
+        { status: 'upgraded' }
+      );
+    }
 
     res.json({
       message: 'Payment verified successfully',
@@ -193,6 +238,148 @@ const verifyPayment = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// ============ PLAN UPGRADE ============
+
+// @desc    Get upgrade price (differential amount)
+// @route   GET /api/payments/upgrade-price
+const getUpgradePrice = async (req, res) => {
+  try {
+    // Find user's active 6-month subscription
+    const currentSub = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active',
+      endDate: { $gte: new Date() },
+    }).populate('planId').sort({ endDate: -1 });
+
+    if (!currentSub) {
+      return res.status(400).json({ message: 'No active subscription found' });
+    }
+
+    if (currentSub.planId.durationMonths === 12) {
+      return res.status(400).json({ message: 'You already have a 1-year plan' });
+    }
+
+    // Find the 1-year (premium) plan
+    const yearlyPlan = await Plan.findOne({
+      durationMonths: 12,
+      isActive: true,
+    }).sort({ order: 1 });
+
+    if (!yearlyPlan) {
+      return res.status(404).json({ message: 'No 1-year plan available' });
+    }
+
+    const amountAlreadyPaid = currentSub.amountPaid || currentSub.planId.price || 0;
+    const upgradePrice = Math.max(0, yearlyPlan.price - amountAlreadyPaid);
+
+    res.json({
+      currentPlan: {
+        _id: currentSub.planId._id,
+        planName: currentSub.planId.planName,
+        durationMonths: currentSub.planId.durationMonths,
+        price: currentSub.planId.price,
+        amountPaid: amountAlreadyPaid,
+        endDate: currentSub.endDate,
+      },
+      upgradePlan: {
+        _id: yearlyPlan._id,
+        planName: yearlyPlan.planName,
+        durationMonths: yearlyPlan.durationMonths,
+        price: yearlyPlan.price,
+      },
+      upgradePrice,
+      currentSubscriptionId: currentSub._id,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Create Razorpay order for plan upgrade
+// @route   POST /api/payments/create-upgrade-order
+const createUpgradeOrder = async (req, res) => {
+  try {
+    // Find user's active 6-month subscription
+    const currentSub = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active',
+      endDate: { $gte: new Date() },
+    }).populate('planId').sort({ endDate: -1 });
+
+    if (!currentSub) {
+      return res.status(400).json({ message: 'No active subscription found' });
+    }
+
+    if (currentSub.planId.durationMonths === 12) {
+      return res.status(400).json({ message: 'You already have a 1-year plan' });
+    }
+
+    // Find the 1-year plan
+    const yearlyPlan = await Plan.findOne({
+      durationMonths: 12,
+      isActive: true,
+    }).sort({ order: 1 });
+
+    if (!yearlyPlan) {
+      return res.status(404).json({ message: 'No 1-year plan available' });
+    }
+
+    const amountAlreadyPaid = currentSub.amountPaid || currentSub.planId.price || 0;
+    const upgradePrice = Math.max(0, yearlyPlan.price - amountAlreadyPaid);
+
+    if (upgradePrice <= 0) {
+      return res.status(400).json({ message: 'No additional payment required' });
+    }
+
+    const receipt = `upgrade_${Date.now()}_${req.user._id.toString().slice(-6)}`;
+
+    const options = {
+      amount: Math.round(upgradePrice * 100),
+      currency: 'INR',
+      receipt,
+      notes: {
+        planId: yearlyPlan._id.toString(),
+        userId: req.user._id.toString(),
+        planName: yearlyPlan.planName,
+        isUpgrade: 'true',
+        oldSubscriptionId: currentSub._id.toString(),
+      },
+    };
+
+    const order = await razorpay.orders.create(options);
+
+    const payment = await Payment.create({
+      userId: req.user._id,
+      planId: yearlyPlan._id,
+      razorpayOrderId: order.id,
+      amount: upgradePrice,
+      status: 'created',
+      receipt,
+      isUpgrade: true,
+      oldSubscriptionId: currentSub._id,
+    });
+
+    res.status(201).json({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      paymentId: payment._id,
+      planName: yearlyPlan.planName,
+      key: process.env.RAZORPAY_KEY_ID,
+      isUpgrade: true,
+      oldSubscriptionId: currentSub._id,
+      upgradePrice,
+      originalYearlyPrice: yearlyPlan.price,
+      amountAlreadyPaid,
+    });
+  } catch (error) {
+    console.error('Upgrade order creation error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ============ SUBSCRIPTIONS ============
 
 // @desc    Get user's active subscription
 // @route   GET /api/payments/my-subscription
@@ -236,7 +423,7 @@ const getPaymentHistory = async (req, res) => {
 
     const payments = await Payment.find(filter)
       .populate('userId', 'name email mobile')
-      .populate('planId', 'planName price validityDays')
+      .populate('planId', 'planName price validityDays durationMonths')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -278,6 +465,8 @@ const checkAccess = async (req, res) => {
         hasAccess: true,
         plan: subscription.planId,
         expiresAt: subscription.endDate,
+        durationMonths: subscription.planId.durationMonths,
+        canUpgrade: subscription.planId.durationMonths === 6,
       });
     }
 
@@ -300,4 +489,6 @@ module.exports = {
   getMySubscription,
   getPaymentHistory,
   checkAccess,
+  getUpgradePrice,
+  createUpgradeOrder,
 };

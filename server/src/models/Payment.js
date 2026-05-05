@@ -34,11 +34,20 @@ const paymentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['created', 'paid', 'failed', 'refunded'],
+      enum: ['created', 'paid', 'failed', 'refunded', 'refund_needed'],
       default: 'created',
     },
     receipt: {
       type: String,
+    },
+    isUpgrade: {
+      type: Boolean,
+      default: false,
+    },
+    oldSubscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription',
+      default: null,
     },
   },
   { timestamps: true }

@@ -12,6 +12,11 @@ const planSchema = new mongoose.Schema(
       enum: ['core', 'premium'],
       required: [true, 'Plan type is required'],
     },
+    durationMonths: {
+      type: Number,
+      enum: [6, 12],
+      required: [true, 'Duration is required (6 or 12 months)'],
+    },
     originalPrice: {
       type: Number,
       required: [true, 'Original price is required'],
@@ -39,22 +44,18 @@ const planSchema = new mongoose.Schema(
     topicsAllowed: {
       type: Number,
       default: 0,
-      comment: '0 = unlimited (premium), N = specific number of topics allowed',
     },
     mockTestsAllowed: {
       type: Number,
       default: 0,
-      comment: '0 = unlimited (premium), N = specific number of mock tests allowed',
     },
     practiceAccessAll: {
       type: Boolean,
       default: false,
-      comment: 'If true, all practice topics accessible',
     },
     mockTestAccessAll: {
       type: Boolean,
       default: false,
-      comment: 'If true, all mock tests accessible',
     },
     isActive: {
       type: Boolean,

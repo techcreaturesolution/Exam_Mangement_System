@@ -8,7 +8,7 @@ const PaymentPlans = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
-    planName: '', planType: 'core', originalPrice: 0, price: 0, validityDays: 30,
+    planName: '', planType: 'core', durationMonths: 6, originalPrice: 0, price: 0, validityDays: 180,
     description: '', features: '', topicsAllowed: 11, mockTestsAllowed: 3,
     practiceAccessAll: false, mockTestAccessAll: false, isActive: true,
   });
@@ -49,6 +49,7 @@ const PaymentPlans = () => {
   const handleEdit = (plan) => {
     setForm({
       planName: plan.planName, planType: plan.planType || 'core',
+      durationMonths: plan.durationMonths || 6,
       originalPrice: plan.originalPrice || plan.price,
       price: plan.price, validityDays: plan.validityDays,
       description: plan.description || '', features: (plan.features || []).join('\n'),
@@ -73,10 +74,37 @@ const PaymentPlans = () => {
   };
 
   const resetForm = () => ({
-    planName: '', planType: 'core', originalPrice: 0, price: 0, validityDays: 30,
+    planName: '', planType: 'core', durationMonths: 6, originalPrice: 0, price: 0, validityDays: 180,
     description: '', features: '', topicsAllowed: 11, mockTestsAllowed: 3,
     practiceAccessAll: false, mockTestAccessAll: false, isActive: true,
   });
+
+  const handleDurationChange = (months) => {
+    const dur = parseInt(months);
+    if (dur === 12) {
+      setForm({
+        ...form,
+        durationMonths: 12,
+        planType: 'premium',
+        validityDays: 365,
+        practiceAccessAll: true,
+        mockTestAccessAll: true,
+        topicsAllowed: 0,
+        mockTestsAllowed: 0,
+      });
+    } else {
+      setForm({
+        ...form,
+        durationMonths: 6,
+        planType: 'core',
+        validityDays: 180,
+        practiceAccessAll: false,
+        mockTestAccessAll: false,
+        topicsAllowed: 11,
+        mockTestsAllowed: 3,
+      });
+    }
+  };
 
   if (loading) return <div className="loading">Loading...</div>;
 
@@ -89,10 +117,25 @@ const PaymentPlans = () => {
         </button>
       </div>
 
+      <div style={{ background: '#f0f4ff', padding: 16, borderRadius: 12, marginBottom: 20, border: '1px solid #d0d8f0' }}>
+        <h3 style={{ margin: '0 0 8px', color: '#1E3A6E' }}>Plan Duration Guide</h3>
+        <div style={{ display: 'flex', gap: 24 }}>
+          <div>
+            <strong style={{ color: '#1E3A6E' }}>6-Month Plan (Core)</strong>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#666' }}>Admin controls which topics & mock tests are accessible. Limited access managed from backend.</p>
+          </div>
+          <div>
+            <strong style={{ color: '#E87722' }}>1-Year Plan (Premium)</strong>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#666' }}>Full access to all practice topics and mock tests. Students can upgrade from 6-month by paying the difference.</p>
+          </div>
+        </div>
+      </div>
+
       <table className="data-table">
         <thead>
           <tr>
             <th>Plan Name</th>
+            <th>Duration</th>
             <th>Type</th>
             <th>Original Price</th>
             <th>Offer Price</th>
@@ -107,6 +150,11 @@ const PaymentPlans = () => {
           {plans.map((plan) => (
             <tr key={plan._id}>
               <td>{plan.planName}</td>
+              <td>
+                <span className={`badge badge-${plan.durationMonths === 12 ? 'warning' : 'info'}`}>
+                  {plan.durationMonths === 12 ? '1 Year' : '6 Months'}
+                </span>
+              </td>
               <td><span className={`badge badge-${plan.planType === 'premium' ? 'warning' : 'info'}`}>{plan.planType === 'premium' ? 'Premium' : 'Core'}</span></td>
               <td style={{ textDecoration: 'line-through', color: '#999' }}>₹{plan.originalPrice || plan.price}</td>
               <td style={{ fontWeight: 'bold', color: '#E87722' }}>₹{plan.price}</td>
@@ -120,7 +168,7 @@ const PaymentPlans = () => {
               </td>
             </tr>
           ))}
-          {plans.length === 0 && <tr><td colSpan="9" style={{ textAlign: 'center' }}>No plans found</td></tr>}
+          {plans.length === 0 && <tr><td colSpan="10" style={{ textAlign: 'center' }}>No plans found</td></tr>}
         </tbody>
       </table>
 
@@ -132,23 +180,17 @@ const PaymentPlans = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="form-group">
                   <label>Plan Name *</label>
-                  <input type="text" value={form.planName} onChange={(e) => setForm({ ...form, planName: e.target.value })} required placeholder="e.g., Core Plan, Premium Plan" />
+                  <input type="text" value={form.planName} onChange={(e) => setForm({ ...form, planName: e.target.value })} required placeholder="e.g., 6-Month Core Plan" />
                 </div>
                 <div className="form-group">
-                  <label>Plan Type *</label>
-                  <select value={form.planType} onChange={(e) => {
-                    const type = e.target.value;
-                    if (type === 'premium') {
-                      setForm({ ...form, planType: type, practiceAccessAll: true, mockTestAccessAll: true, topicsAllowed: 0, mockTestsAllowed: 0 });
-                    } else {
-                      setForm({ ...form, planType: type, practiceAccessAll: false, mockTestAccessAll: false, topicsAllowed: 11, mockTestsAllowed: 3 });
-                    }
-                  }} required>
-                    <option value="core">Core Plan</option>
-                    <option value="premium">Premium Plan</option>
+                  <label>Plan Duration *</label>
+                  <select value={form.durationMonths} onChange={(e) => handleDurationChange(e.target.value)} required>
+                    <option value={6}>6 Months (Core - Limited Access)</option>
+                    <option value={12}>1 Year (Premium - Full Access)</option>
                   </select>
                 </div>
               </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div className="form-group">
                   <label>Original Price (₹)</label>
@@ -163,10 +205,11 @@ const PaymentPlans = () => {
                 <div className="form-group">
                   <label>Validity (Days) *</label>
                   <input type="number" value={form.validityDays} onChange={(e) => setForm({ ...form, validityDays: parseInt(e.target.value) })} min={1} required />
+                  <small style={{ color: '#666' }}>{form.durationMonths === 6 ? '~180 days' : '~365 days'}</small>
                 </div>
               </div>
 
-              {form.planType === 'core' && (
+              {form.durationMonths === 6 && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: '#f0f4ff', padding: 12, borderRadius: 8, margin: '12px 0' }}>
                   <div className="form-group">
                     <label>Topics Allowed (Practice)</label>
@@ -181,9 +224,10 @@ const PaymentPlans = () => {
                 </div>
               )}
 
-              {form.planType === 'premium' && (
+              {form.durationMonths === 12 && (
                 <div style={{ background: '#fff8f0', padding: 12, borderRadius: 8, margin: '12px 0', border: '1px solid #E87722' }}>
-                  <p style={{ margin: 0, color: '#E87722', fontWeight: 'bold' }}>✨ Premium Plan — Full Access to All Topics & Mock Tests</p>
+                  <p style={{ margin: 0, color: '#E87722', fontWeight: 'bold' }}>1-Year Premium Plan — Full Access to All Topics & Mock Tests</p>
+                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#666' }}>Students with 6-month plans can upgrade by paying the price difference.</p>
                 </div>
               )}
 
