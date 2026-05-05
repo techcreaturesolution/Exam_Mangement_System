@@ -162,8 +162,31 @@ const verifyPayment = async (req, res) => {
       return res.status(400).json({ message: 'Payment verification failed' });
     }
 
+    // First, find the payment without updating to validate upgrade state
+    const pendingPayment = await Payment.findOne(
+      { razorpayOrderId: razorpay_order_id, userId: req.user._id, status: 'created' }
+    ).populate('planId');
+
+    if (!pendingPayment) {
+      return res.status(404).json({ message: 'Payment record not found' });
+    }
+
+    // For upgrades, validate old subscription is still active BEFORE marking payment as paid
+    if (pendingPayment.isUpgrade && pendingPayment.oldSubscriptionId) {
+      const oldSub = await Subscription.findOne({
+        _id: pendingPayment.oldSubscriptionId,
+        userId: pendingPayment.userId,
+        status: 'active',
+      });
+      if (!oldSub) {
+        await Payment.findByIdAndUpdate(pendingPayment._id, { status: 'refund_needed' });
+        return res.status(400).json({ message: 'Subscription was already upgraded. Payment marked for refund.' });
+      }
+    }
+
+    // Now atomically mark payment as paid
     const payment = await Payment.findOneAndUpdate(
-      { razorpayOrderId: razorpay_order_id, userId: req.user._id, status: 'created' },
+      { _id: pendingPayment._id, status: 'created' },
       {
         razorpayPaymentId: razorpay_payment_id,
         razorpaySignature: razorpay_signature,
@@ -175,18 +198,6 @@ const verifyPayment = async (req, res) => {
 
     if (!payment) {
       return res.status(404).json({ message: 'Payment record not found' });
-    }
-
-    // For upgrades, validate old subscription is still active BEFORE creating new one
-    if (payment.isUpgrade && payment.oldSubscriptionId) {
-      const oldSub = await Subscription.findOne({
-        _id: payment.oldSubscriptionId,
-        userId: payment.userId,
-        status: 'active',
-      });
-      if (!oldSub) {
-        return res.status(400).json({ message: 'Subscription was already upgraded' });
-      }
     }
 
     // Create new subscription
