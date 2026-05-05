@@ -94,6 +94,16 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'This plan is no longer available' });
     }
 
+    // Reject if user already has an active subscription — must use upgrade endpoint instead
+    const existingSub = await Subscription.findOne({
+      userId: req.user._id,
+      status: 'active',
+      endDate: { $gte: new Date() },
+    });
+    if (existingSub) {
+      return res.status(400).json({ message: 'You already have an active subscription. Use the upgrade option to change plans.' });
+    }
+
     const receipt = `receipt_${Date.now()}_${req.user._id.toString().slice(-6)}`;
 
     const options = {
@@ -221,7 +231,7 @@ const getUpgradePrice = async (req, res) => {
       userId: req.user._id,
       status: 'active',
       endDate: { $gte: new Date() },
-    }).populate('planId');
+    }).populate('planId').sort({ endDate: -1 });
 
     if (!currentSub) {
       return res.status(400).json({ message: 'No active subscription found' });
@@ -276,7 +286,7 @@ const createUpgradeOrder = async (req, res) => {
       userId: req.user._id,
       status: 'active',
       endDate: { $gte: new Date() },
-    }).populate('planId');
+    }).populate('planId').sort({ endDate: -1 });
 
     if (!currentSub) {
       return res.status(400).json({ message: 'No active subscription found' });

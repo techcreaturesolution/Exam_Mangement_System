@@ -304,10 +304,15 @@ class _PlansScreenState extends State<PlansScreen> {
     final practiceAll = plan['practiceAccessAll'] ?? false;
     final mockAll = plan['mockTestAccessAll'] ?? false;
 
-    // Check if user already has this plan
+    // Check if user already has this plan or any active subscription
     final hasThisPlan = _subscription != null &&
         _subscription!['planId'] != null &&
         _subscription!['planId']['durationMonths'] == durationMonths;
+
+    // If user has a 6-month plan and this is the 1-year card, redirect to upgrade
+    final hasActiveSub = _subscription != null && _subscription!['planId'] != null;
+    final currentDuration = hasActiveSub ? (_subscription!['planId']['durationMonths'] ?? 0) : 0;
+    final shouldUseUpgrade = hasActiveSub && !hasThisPlan && isYearly && currentDuration == 6;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -473,17 +478,23 @@ class _PlansScreenState extends State<PlansScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: hasThisPlan ? null : () => _purchasePlan(plan),
+                    onPressed: hasThisPlan
+                        ? null
+                        : shouldUseUpgrade
+                            ? () => _initiateUpgrade()
+                            : () => _purchasePlan(plan),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: hasThisPlan
                           ? Colors.grey.shade300
-                          : (isYearly ? AppColors.orange : AppColors.navy),
+                          : (shouldUseUpgrade ? AppColors.orange : (isYearly ? AppColors.orange : AppColors.navy)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
                       hasThisPlan
                           ? 'Current Plan'
-                          : 'Get ${isYearly ? "1-Year" : "6-Month"} Plan',
+                          : shouldUseUpgrade
+                              ? 'Upgrade — Pay Difference Only'
+                              : 'Get ${isYearly ? "1-Year" : "6-Month"} Plan',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
