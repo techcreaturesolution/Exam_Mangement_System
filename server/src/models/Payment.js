@@ -40,6 +40,15 @@ const paymentSchema = new mongoose.Schema(
     receipt: {
       type: String,
     },
+    isUpgrade: {
+      type: Boolean,
+      default: false,
+    },
+    oldSubscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription',
+      default: null,
+    },
   },
   { timestamps: true }
 );

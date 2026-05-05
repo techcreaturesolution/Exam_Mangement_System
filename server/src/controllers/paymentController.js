@@ -136,7 +136,7 @@ const createOrder = async (req, res) => {
 // @route   POST /api/payments/verify
 const verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, isUpgrade, oldSubscriptionId } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
@@ -167,9 +167,21 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ message: 'Payment record not found' });
     }
 
-    // Handle upgrade: cancel old subscription
-    if (isUpgrade && oldSubscriptionId) {
-      await Subscription.findByIdAndUpdate(oldSubscriptionId, { status: 'upgraded' });
+    // Verify payment belongs to authenticated user
+    if (payment.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized payment verification' });
+    }
+
+    // Handle upgrade using server-stored data (not client input)
+    if (payment.isUpgrade && payment.oldSubscriptionId) {
+      const oldSub = await Subscription.findOne({
+        _id: payment.oldSubscriptionId,
+        userId: payment.userId,
+        status: 'active',
+      });
+      if (oldSub) {
+        await Subscription.findByIdAndUpdate(oldSub._id, { status: 'upgraded' });
+      }
     }
 
     // Create new subscription
@@ -184,8 +196,8 @@ const verifyPayment = async (req, res) => {
       endDate,
       amountPaid: payment.amount,
       status: 'active',
-      isUpgrade: isUpgrade || false,
-      upgradedFrom: oldSubscriptionId || null,
+      isUpgrade: payment.isUpgrade || false,
+      upgradedFrom: payment.oldSubscriptionId || null,
     });
 
     res.json({
@@ -320,6 +332,8 @@ const createUpgradeOrder = async (req, res) => {
       amount: upgradePrice,
       status: 'created',
       receipt,
+      isUpgrade: true,
+      oldSubscriptionId: currentSub._id,
     });
 
     res.status(201).json({
