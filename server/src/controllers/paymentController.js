@@ -146,7 +146,7 @@ const verifyPayment = async (req, res) => {
 
     if (expectedSignature !== razorpay_signature) {
       await Payment.findOneAndUpdate(
-        { razorpayOrderId: razorpay_order_id },
+        { razorpayOrderId: razorpay_order_id, userId: req.user._id },
         { status: 'failed' }
       );
       return res.status(400).json({ message: 'Payment verification failed' });
