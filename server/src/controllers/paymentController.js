@@ -153,7 +153,7 @@ const verifyPayment = async (req, res) => {
     }
 
     const payment = await Payment.findOneAndUpdate(
-      { razorpayOrderId: razorpay_order_id },
+      { razorpayOrderId: razorpay_order_id, userId: req.user._id },
       {
         razorpayPaymentId: razorpay_payment_id,
         razorpaySignature: razorpay_signature,
@@ -165,11 +165,6 @@ const verifyPayment = async (req, res) => {
 
     if (!payment) {
       return res.status(404).json({ message: 'Payment record not found' });
-    }
-
-    // Verify payment belongs to authenticated user
-    if (payment.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Unauthorized payment verification' });
     }
 
     // Handle upgrade using server-stored data (not client input)
