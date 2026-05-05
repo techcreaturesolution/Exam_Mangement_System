@@ -177,7 +177,19 @@ const verifyPayment = async (req, res) => {
       return res.status(404).json({ message: 'Payment record not found' });
     }
 
-    // Create new subscription first (safer: if this fails, old sub stays active)
+    // For upgrades, validate old subscription is still active BEFORE creating new one
+    if (payment.isUpgrade && payment.oldSubscriptionId) {
+      const oldSub = await Subscription.findOne({
+        _id: payment.oldSubscriptionId,
+        userId: payment.userId,
+        status: 'active',
+      });
+      if (!oldSub) {
+        return res.status(400).json({ message: 'Subscription was already upgraded' });
+      }
+    }
+
+    // Create new subscription
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + payment.planId.validityDays);
@@ -195,14 +207,10 @@ const verifyPayment = async (req, res) => {
 
     // Handle upgrade: deactivate old subscription AFTER new one is created
     if (payment.isUpgrade && payment.oldSubscriptionId) {
-      const oldSub = await Subscription.findOne({
-        _id: payment.oldSubscriptionId,
-        userId: payment.userId,
-        status: 'active',
-      });
-      if (oldSub) {
-        await Subscription.findByIdAndUpdate(oldSub._id, { status: 'upgraded' });
-      }
+      await Subscription.findOneAndUpdate(
+        { _id: payment.oldSubscriptionId, userId: payment.userId, status: 'active' },
+        { status: 'upgraded' }
+      );
     }
 
     res.json({
