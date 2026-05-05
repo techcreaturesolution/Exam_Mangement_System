@@ -313,6 +313,8 @@ class _PlansScreenState extends State<PlansScreen> {
     final hasActiveSub = _subscription != null && _subscription!['planId'] != null;
     final currentDuration = hasActiveSub ? (_subscription!['planId']['durationMonths'] ?? 0) : 0;
     final shouldUseUpgrade = hasActiveSub && !hasThisPlan && isYearly && currentDuration == 6;
+    // Disable button if user has any active sub and this isn't their plan or an upgrade target
+    final cannotPurchase = hasActiveSub && !hasThisPlan && !shouldUseUpgrade;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -478,13 +480,13 @@ class _PlansScreenState extends State<PlansScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: hasThisPlan
+                    onPressed: (hasThisPlan || cannotPurchase)
                         ? null
                         : shouldUseUpgrade
                             ? () => _initiateUpgrade()
                             : () => _purchasePlan(plan),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: hasThisPlan
+                      backgroundColor: (hasThisPlan || cannotPurchase)
                           ? Colors.grey.shade300
                           : (shouldUseUpgrade ? AppColors.orange : (isYearly ? AppColors.orange : AppColors.navy)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -492,13 +494,15 @@ class _PlansScreenState extends State<PlansScreen> {
                     child: Text(
                       hasThisPlan
                           ? 'Current Plan'
-                          : shouldUseUpgrade
-                              ? 'Upgrade — Pay Difference Only'
-                              : 'Get ${isYearly ? "1-Year" : "6-Month"} Plan',
+                          : cannotPurchase
+                              ? 'Already Subscribed'
+                              : shouldUseUpgrade
+                                  ? 'Upgrade — Pay Difference Only'
+                                  : 'Get ${isYearly ? "1-Year" : "6-Month"} Plan',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: hasThisPlan ? Colors.grey.shade600 : Colors.white,
+                        color: (hasThisPlan || cannotPurchase) ? Colors.grey.shade600 : Colors.white,
                       ),
                     ),
                   ),

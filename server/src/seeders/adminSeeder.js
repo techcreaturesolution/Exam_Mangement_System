@@ -133,11 +133,12 @@ const seedDB = async () => {
     ];
 
     for (const plan of plans) {
-      const existing = await Plan.findOne({ planName: plan.planName });
-      if (!existing) {
-        await Plan.create(plan);
-        console.log(`Plan created: ${plan.planName} (₹${plan.price} / ${plan.durationMonths} months)`);
-      }
+      await Plan.findOneAndUpdate(
+        { planType: plan.planType },
+        plan,
+        { upsert: true, new: true }
+      );
+      console.log(`Plan upserted: ${plan.planName} (₹${plan.price} / ${plan.durationMonths} months)`);
     }
 
     console.log('\nSeed completed successfully!');
