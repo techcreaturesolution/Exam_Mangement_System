@@ -153,7 +153,7 @@ const verifyPayment = async (req, res) => {
     }
 
     const payment = await Payment.findOneAndUpdate(
-      { razorpayOrderId: razorpay_order_id, userId: req.user._id },
+      { razorpayOrderId: razorpay_order_id, userId: req.user._id, status: 'created' },
       {
         razorpayPaymentId: razorpay_payment_id,
         razorpaySignature: razorpay_signature,
